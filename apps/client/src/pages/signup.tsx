@@ -5,7 +5,6 @@ import { endpoints } from "api-interface";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { toast } from "react-hot-toast";
 
 export const getServerSideProps: GetServerSideProps = async (context) =>
   service(

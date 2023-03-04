@@ -17,4 +17,13 @@ export class NftController {
       this.nftService.getNft,
     );
   }
+
+  @InferMethod(endpoints.nft.getAllNfts)
+  getAllNfts(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.nft.getAllNfts,
+      context,
+      this.nftService.getAllNfts,
+    );
+  }
 }

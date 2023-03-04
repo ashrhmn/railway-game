@@ -15,6 +15,7 @@
     "client": "env-cmd --silent yarn workspace client",
     "migration:create": "env-cmd --silent yarn workspace api prisma migrate dev",
     "db:reset": "env-cmd --silent yarn workspace api prisma migrate reset --force",
+    "db:studio": "env-cmd --silent yarn workspace api prisma studio",
     "seed": "env-cmd --silent yarn workspace api prisma db seed"
   },
   "devDependencies": {

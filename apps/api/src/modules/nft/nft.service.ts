@@ -17,4 +17,15 @@ export class NftService {
       return nft;
     },
   );
+
+  getAllNfts = createAsyncService<typeof endpoints.nft.getAllNfts>(
+    async ({ query: { skip, take } }) => {
+      const nfts = await this.prisma.nft.findMany({
+        include: { nftMetadata: true },
+        take,
+        skip,
+      });
+      return nfts;
+    },
+  );
 }

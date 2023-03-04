@@ -1,4 +1,4 @@
-import { ZodType, z } from "zod";
+import { ZodType, z, coerce } from "zod";
 
 const defaultConfig = {
   paramSchema: z.object({}),
@@ -34,6 +34,25 @@ export type InferOutputs<IEndpoint> = PickSchemaType<
   "responseSchema"
 >;
 export type InferOutputsPromise<IEndpoint> = Promise<InferOutputs<IEndpoint>>;
+
+const NFTResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  image: z.string(),
+  isFrozen: z.boolean(),
+  nftMetadata: z.array(
+    z.object({
+      type: z.string(),
+      value: z.string(),
+    }),
+  ),
+});
+
+const SkipTakeSchema = z.object({
+  skip: z.coerce.number().optional().default(0),
+  take: z.coerce.number().optional().default(10),
+});
 
 export const endpoints = {
   auth: {
@@ -81,23 +100,17 @@ export const endpoints = {
     },
   },
   nft: {
+    getAllNfts: {
+      ...defaultConfig,
+      pattern: "nfts",
+      responseSchema: NFTResponseSchema.array(),
+      querySchema: SkipTakeSchema,
+    },
     getNft: {
       ...defaultConfig,
       pattern: "nfts/:id",
       paramSchema: z.object({ id: z.string() }),
-      responseSchema: z.object({
-        id: z.string(),
-        name: z.string(),
-        description: z.string(),
-        image: z.string(),
-        isFrozen: z.boolean(),
-        nftMetadata: z.array(
-          z.object({
-            type: z.string(),
-            value: z.string(),
-          }),
-        ),
-      }),
+      responseSchema: NFTResponseSchema,
     },
   },
 } as const;
