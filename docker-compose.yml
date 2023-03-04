@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  app:
+    build: .
+    image: railway-game-img
+    ports:
+      - 3000:3000
+    container_name: railway-game
+    restart: unless-stopped
+    env_file:
+      - .env

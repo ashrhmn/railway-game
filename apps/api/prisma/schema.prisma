@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ROLE {
+  ADMIN
+  USER
+}
+
+model User {
+  id                    String      @id @default(cuid())
+  username              String   @unique
+  password              String
+  name                  String?
+  roles                 ROLE[]     @default([])
+  settingsActivities SettingsActivity[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model NFTMetadata{
+  id        String      @id @default(cuid())
+  type      String
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  nfts     Nft[]
+
+  @@map("nft_metadata")
+}
+
+enum COLOR{
+  RED
+  BLUE
+  GREEN
+  YELLOW
+  ORANGE
+  PURPLE
+  PINK
+  BROWN
+  WHITE
+  BLACK
+}
+
+enum NFT_JOB{
+  RAIL_2_6
+  RAIL_2_4
+  RAIL_6_8
+  RAIL_4_8
+  RAIL_2_8
+  RAIL_4_6
+  RAIL_2_4_6_8
+  BRIDGE
+  KNIGHT
+  LIGHT
+}
+
+model Nft{
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  image       String
+  isFrozen    Boolean @default(false)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  nftMetadata NFTMetadata[]
+  job         NFT_JOB
+  color       COLOR
+  level       Int @default(1)
+  abilityR    Int @default(1) @map("ability_r")
+  abilityB    Int @default(1) @map("ability_b")
+  abilityL    Int @default(1) @map("ability_l")
+  abilityK    Int @default(1) @map("ability_k")
+  mapPosition MapPosition[]
+
+  @@map("nfts")
+}
+
+enum MAP_ITEMS{
+  MOUNTAIN
+  RIVER
+  CHECKPOINT
+  ENEMY
+}
+
+
+model MapPosition{
+  id        String      @id @default(cuid())
+  x         Int
+  y         Int
+  color     COLOR
+  current   Boolean @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  nfts      Nft[]
+  mapItem   MAP_ITEMS? @map("map_item")
+  prePlaced NFT_JOB? @map("pre_placed")
+  game      Game @relation(fields: [gameId], references: [id])
+  gameId    String @map("game_id")
+
+  @@map("map_positions")
+}
+
+model Game{
+  id        String      @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  mapPositions MapPosition[]
+
+  @@map("games")
+}
+
+
+model Settings{
+  id        String      @id @default(cuid())
+  key       String
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model SettingsActivity{
+  id        String      @id @default(cuid())
+  type      String
+  author    User @relation(fields: [authorId], references: [id])
+  authorId  String @map("author_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings_activities")
+}
+
+model MapActivity{
+  id        String      @id @default(cuid())
+  type      String
+  author    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("map_activities")
+}
