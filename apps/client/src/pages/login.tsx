@@ -9,7 +9,7 @@ import { useState } from "react";
 export const getServerSideProps: GetServerSideProps = async (context) =>
   service(
     endpoints.auth.currentUser,
-    context,
+    context
   )({})
     .then(() => ({
       props: {},
@@ -28,21 +28,21 @@ const Login = () => {
       service(endpoints.auth.login)({ body: { username, password } }),
       {
         loading: "Signing In...",
-      },
+      }
     )
       .then(() => router.push("/"))
       .catch(handleReqError);
   return (
-    <div className="flex flex-col gap-4 items-center justify-center">
+    <div className="flex flex-col items-center justify-center gap-4">
       <input
-        className="text-xl p-2 rounded border-2 border-neutral-600"
+        className="rounded border-2 border-neutral-600 p-2 text-xl"
         value={username}
         placeholder="Username"
         onChange={(e) => setUsername(e.target.value)}
       />
       <input
         type="password"
-        className="text-xl p-2 rounded border-2 border-neutral-600"
+        className="rounded border-2 border-neutral-600 p-2 text-xl"
         value={password}
         placeholder="Password"
         onChange={(e) => setPassword(e.target.value)}
@@ -50,7 +50,7 @@ const Login = () => {
       <div>
         <button
           onClick={handleSignIn}
-          className="bg-blue-500 p-2 rounded text-white"
+          className="rounded bg-blue-500 p-2 text-white"
         >
           Sign In
         </button>

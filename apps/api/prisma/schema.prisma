@@ -71,6 +71,7 @@ model Nft{
   description String
   image       String
   isFrozen    Boolean @default(false)
+  owner       String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   nftMetadata NFTMetadata[]
@@ -111,8 +112,17 @@ model MapPosition{
   @@map("map_positions")
 }
 
+enum GameStatus{
+  WAITING
+  STARTED
+  FINISHED
+}
+
 model Game{
   id        String      @id @default(cuid())
+  name      String?
+  status    GameStatus
+  contractAddress String? @map("contract_address")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   mapPositions MapPosition[]

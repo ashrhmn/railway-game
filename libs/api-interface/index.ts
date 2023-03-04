@@ -41,6 +41,7 @@ const NFTResponseSchema = z.object({
   description: z.string(),
   image: z.string(),
   isFrozen: z.boolean(),
+  owner: z.string().nullable(),
   nftMetadata: z.array(
     z.object({
       type: z.string(),
@@ -111,6 +112,13 @@ export const endpoints = {
       pattern: "nfts/:id",
       paramSchema: z.object({ id: z.string() }),
       responseSchema: NFTResponseSchema,
+    },
+  },
+  map: {
+    getColors: {
+      ...defaultConfig,
+      pattern: "map/colors",
+      responseSchema: z.string().array(),
     },
   },
 } as const;

@@ -1,18 +1,8 @@
-import service from "@/service";
+import { serverSideAuth } from "@/service/serverSideAuth";
 import { endpoints, InferOutputs } from "api-interface";
-import { GetServerSideProps } from "next";
 import Link from "next/link";
 
-export const getServerSideProps: GetServerSideProps = async (context) =>
-  service(
-    endpoints.auth.currentUser,
-    context,
-  )({})
-    .then((user) => ({ props: { user } }))
-    .catch(() => ({
-      props: {},
-      redirect: { destination: "/login", statusCode: 301 },
-    }));
+export const getServerSideProps = serverSideAuth;
 
 const Dashboard = ({
   user,

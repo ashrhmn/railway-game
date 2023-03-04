@@ -3,11 +3,12 @@ import { APP_GUARD } from "@nestjs/core";
 import { RolesGuard } from "./guards/roles.guard";
 import { AuthMiddleware } from "./middlewares/auth.middleware";
 import { AuthModule } from "./modules/auth/auth.module";
+import { MapModule } from "./modules/map/map.module";
 import { NftModule } from "./modules/nft/nft.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
 
 @Module({
-  imports: [PrismaModule, AuthModule, NftModule],
+  imports: [PrismaModule, AuthModule, MapModule, NftModule],
   controllers: [],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })

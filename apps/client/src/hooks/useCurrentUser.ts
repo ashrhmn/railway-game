@@ -1,11 +1,12 @@
 import service from "@/service";
+import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "api-interface";
-import { useState } from "react";
 
 const getter = service(endpoints.auth.currentUser);
 
-type ICurrentUser = Awaited<ReturnType<typeof getter>>;
-
-export const useCurrentUser = () => {
-  const [user, setUser] = useState<undefined | null | ICurrentUser>(undefined);
-};
+export const useCurrentUser = () =>
+  useQuery({
+    queryKey: ["current-user"],
+    queryFn: () => getter({}),
+    retry: false,
+  });
