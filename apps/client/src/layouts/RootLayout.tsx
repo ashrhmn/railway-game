@@ -16,16 +16,17 @@ const RootLayout = ({
   pageProps?: PageProps;
 }) => {
   const { data: currentUser, status } = useCurrentUser();
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   return (
-    <>
+    <div>
       {!pageProps?.user && status === "error" && <main>{children}</main>}
       {(!!pageProps?.user || !!currentUser) && (
         <main className="grid grid-cols-12">
           <div
             className={clx(
               isSidebarExpanded ? "col-span-2" : "col-span-2 xs:col-span-1",
-              "transition-all"
+              "transition-all",
+              "border-r-2"
             )}
           >
             <Sidebar
@@ -40,7 +41,8 @@ const RootLayout = ({
           <div
             className={clx(
               isSidebarExpanded ? "col-span-10" : "col-span-10 xs:col-span-11",
-              "bg-neutral-100"
+              "bg-inherit",
+              "p-3"
             )}
           >
             {children}
@@ -48,7 +50,7 @@ const RootLayout = ({
         </main>
       )}
       <Toaster position="bottom-right" />
-    </>
+    </div>
   );
 };
 

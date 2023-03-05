@@ -1,4 +1,4 @@
-import { Nft, NFT_JOB, Prisma, PrismaClient } from "@prisma/client";
+import { NFT_JOB, Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "argon2";
 const prisma = new PrismaClient();
 
@@ -30,7 +30,7 @@ async function seedNft() {
         image: `https://picsum.photos/200/300?random=${i + 1}`,
         job: NFT_JOB[
           Object.keys(NFT_JOB)[
-            Math.round(Math.random() * 100 * i) % Object.keys(NFT_JOB).length
+          Math.round(Math.random() * 100 * i) % Object.keys(NFT_JOB).length
           ]
         ],
         color: "RED",

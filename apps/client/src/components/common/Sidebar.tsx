@@ -24,7 +24,7 @@ const Sidebar = ({
   pageProps?: PageProps;
 }) => {
   return (
-    <div className="relative h-[100vh] text-center transition-all">
+    <div className="relative h-[100vh] overflow-hidden text-center transition-all">
       <div className="flex items-center justify-end">
         <button onClick={() => setIsSidebarExpanded((v) => !v)}>
           {isSidebarExpanded ? (
@@ -35,7 +35,10 @@ const Sidebar = ({
         </button>
       </div>
       <div className="flex h-[30vh] flex-col items-center justify-center">
-        <UserCircleIcon className="h-12 w-12 md:h-20 md:w-20" />
+        <UserCircleIcon
+          title={pageProps?.user?.username}
+          className="h-12 w-12 md:h-20 md:w-20"
+        />
         <h1 className="hidden text-2xl md:block">
           {pageProps?.user?.username}
         </h1>
@@ -43,7 +46,7 @@ const Sidebar = ({
           {pageProps?.user?.roles.join(" | ")}
         </p>
       </div>
-      <div className="flex flex-col justify-center gap-4 p-2">
+      <div className="flex flex-col items-center justify-center gap-4">
         <SidebarLinks
           Icon={HomeIcon}
           expanded={isSidebarExpanded}
@@ -79,9 +82,9 @@ const Sidebar = ({
       <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center">
         <Link
           href={`/api/auth/logout`}
-          className="flex items-center gap-2 rounded p-1 text-neutral-700/80 transition-colors hover:bg-red-600 hover:text-white"
+          className="btn-outline btn flex items-center gap-2"
         >
-          <ArrowLeftOnRectangleIcon className="h-6 w-6" />
+          <ArrowLeftOnRectangleIcon title="Logout" className="h-6 w-6" />
           {isSidebarExpanded && (
             <span className="hidden md:inline">Logout</span>
           )}
@@ -109,13 +112,14 @@ const SidebarLinks = ({
 }) => (
   <Link
     className={clx(
-      "flex items-center gap-2 text-2xl",
-      expanded ? "justify-center md:justify-start" : "justify-center"
+      "flex w-full items-center gap-2 text-xl",
+      expanded ? "justify-center md:justify-start" : "justify-center",
+      "btn-ghost btn"
     )}
     href={href}
   >
     <Icon
-      className={clx(expanded ? "h-10 w-10 md:h-6 md:w-6" : "h-10 w-10")}
+      className={clx(expanded && "md:h-6 md:w-6", "h-10 w-10")}
       title={text}
     />
     {expanded && <span className="hidden md:block">{text}</span>}

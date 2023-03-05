@@ -33,28 +33,33 @@ const Login = () => {
       .then(() => router.push("/"))
       .catch(handleReqError);
   return (
-    <div className="flex flex-col items-center justify-center gap-4">
-      <input
-        className="rounded border-2 border-neutral-600 p-2 text-xl"
-        value={username}
-        placeholder="Username"
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <input
-        type="password"
-        className="rounded border-2 border-neutral-600 p-2 text-xl"
-        value={password}
-        placeholder="Password"
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <div>
-        <button
-          onClick={handleSignIn}
-          className="rounded bg-blue-500 p-2 text-white"
-        >
+    <div className="flex h-[100vh] w-[100vw] items-center justify-center">
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        className="flex w-full max-w-xs flex-col items-center justify-center gap-4 rounded-xl bg-gray-900 p-5"
+      >
+        <div className="form-control w-full">
+          <label className="label-text label">Username</label>
+          <input
+            className="input-bordered input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </div>
+        <div className="form-control w-full">
+          <label className="label-text label">Password</label>
+          <input
+            type="password"
+            className="input-bordered input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <button type="submit" onClick={handleSignIn} className="btn-accent btn">
           Sign In
         </button>
-      </div>
+      </form>
     </div>
   );
 };

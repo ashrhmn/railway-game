@@ -25,6 +25,7 @@ export const createController = <P, Q, R, B>(
     const data = fn({ param, body, query }, context);
     return responseSchema.parse(data);
   } catch (error) {
+    console.log("Create Controller Error: ", error);
     throw new BadRequestException(error);
   }
 };
@@ -47,6 +48,7 @@ export const createAsyncController = async <P, Q, R, B>(
     const data = await fn({ param, body, query }, context);
     return responseSchema.parse(data);
   } catch (error) {
+    console.log("Create Async Controller Error: ", error);
     throw new BadRequestException(error);
   }
 };

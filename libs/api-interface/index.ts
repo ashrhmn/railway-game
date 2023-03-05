@@ -1,4 +1,5 @@
-import { ZodType, z, coerce } from "zod";
+import { ZodType, z } from "zod";
+import { getAddress } from "ethers/lib/utils";
 
 const defaultConfig = {
   paramSchema: z.object({}),
@@ -19,8 +20,8 @@ export type IEndpoint<P, Q, R, B> = {
 
 type PickSchemaType<IEndpoint, key> = key extends keyof IEndpoint
   ? IEndpoint[key] extends ZodType<any, any, any>
-  ? z.infer<IEndpoint[key]>
-  : never
+    ? z.infer<IEndpoint[key]>
+    : never
   : never;
 
 export type InferInputs<IEndpoint> = {
@@ -34,6 +35,20 @@ export type InferOutputs<IEndpoint> = PickSchemaType<
   "responseSchema"
 >;
 export type InferOutputsPromise<IEndpoint> = Promise<InferOutputs<IEndpoint>>;
+
+const ValidAddressSchema = <S>(schema: ZodType<S>) =>
+  z.string().transform((v, c) => {
+    try {
+      if (!v) return schema.parse(v);
+      return getAddress(v);
+    } catch (error) {
+      c.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid address",
+      });
+      return z.NEVER;
+    }
+  });
 
 const NFTResponseSchema = z.object({
   id: z.string(),
@@ -119,6 +134,95 @@ export const endpoints = {
       ...defaultConfig,
       pattern: "map/colors",
       responseSchema: z.string().array(),
+    },
+    getMapItems: {
+      ...defaultConfig,
+      pattern: "map/items",
+      responseSchema: z.string().array(),
+    },
+    getNftJobs: {
+      ...defaultConfig,
+      pattern: "map/nft-jobs",
+      responseSchema: z.string().array(),
+    },
+    getPositions: {
+      ...defaultConfig,
+      pattern: "map/positions",
+      responseSchema: z
+        .object({
+          id: z.string(),
+          x: z.number(),
+          y: z.number(),
+          color: z.string(),
+          mapItem: z.string().nullable(),
+          prePlaced: z.string().nullable(),
+          gameId: z.string(),
+          nfts: NFTResponseSchema.array(),
+        })
+        .array(),
+      querySchema: z
+        .object({
+          gameId: z.string(),
+          color: z.string(),
+        })
+        .and(SkipTakeSchema),
+    },
+    assignItemToPosition: {
+      ...defaultConfig,
+      pattern: "map/assign-item-to-position",
+      method: "POST",
+      bodySchema: z.object({
+        x: z.number(),
+        y: z.number(),
+        color: z.string(),
+        mapItem: z.string().optional(),
+        prePlaced: z.string().optional(),
+        gameId: z.string(),
+      }),
+      responseSchema: z.string(),
+    },
+    removeItem: {
+      ...defaultConfig,
+      pattern: "map/remove-item/:id",
+      method: "DELETE",
+      paramSchema: z.object({ id: z.string() }),
+      responseSchema: z.string(),
+    },
+  },
+  game: {
+    getAll: {
+      ...defaultConfig,
+      pattern: "game",
+      responseSchema: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+          contractAddress: z.string().nullable(),
+          status: z.string(),
+        })
+        .array(),
+      querySchema: SkipTakeSchema,
+    },
+    createGame: {
+      ...defaultConfig,
+      pattern: "game",
+      method: "POST",
+      bodySchema: z.object({
+        name: z.string().min(3, "Name too short").max(20, "Name too long"),
+        contractAddress: ValidAddressSchema(z.string().optional()),
+      }),
+      responseSchema: z.string(),
+    },
+    updateGame: {
+      ...defaultConfig,
+      pattern: "game/:id",
+      method: "PUT",
+      bodySchema: z.object({
+        name: z.string().min(3, "Name too short").max(20, "Name too long"),
+        contractAddress: ValidAddressSchema(z.string().optional()),
+      }),
+      paramSchema: z.object({ id: z.string() }),
+      responseSchema: z.string(),
     },
   },
 } as const;

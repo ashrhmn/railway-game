@@ -1,0 +1,241 @@
+import service from "@/service";
+import { endpoints } from "api-interface";
+import { GetServerSideProps, GetServerSidePropsContext, NextPage } from "next";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { clx } from "@/utils/classname.utils";
+import { XMarkIcon } from "@heroicons/react/24/solid";
+import { promiseToast } from "@/utils/toast.utils";
+import { handleReqError } from "@/utils/error.utils";
+import { useQuery } from "@tanstack/react-query";
+
+const getter = (context?: GetServerSidePropsContext) =>
+  service(endpoints.game.getAll, context)({}).catch(() => null);
+
+type Props = {
+  games: Awaited<ReturnType<typeof getter>>;
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const games = await getter(context);
+  return { props: { games } };
+};
+
+const createFormSchema = endpoints.game.createGame.bodySchema;
+type CreateFormData = z.infer<typeof createFormSchema>;
+
+const Games: NextPage<Props> = ({ games: initialGames }) => {
+  const [isAddModalShown, setIsAddModalShown] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreateFormData>({
+    resolver: zodResolver(createFormSchema),
+  });
+  const { data: games, refetch } = useQuery({
+    queryKey: ["games"],
+    queryFn: () => getter(),
+    initialData: initialGames,
+  });
+  const [editingItem, setEditingItem] = useState<
+    Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null
+  >(null);
+  useEffect(() => {
+    refetch();
+  }, [editingItem, refetch]);
+  const handleAddGame = (data: CreateFormData) => {
+    promiseToast(service(endpoints.game.createGame)({ body: data }), {
+      loading: "Creating Game...",
+    })
+      .then(() => {
+        setIsAddModalShown(false);
+        refetch();
+      })
+      .catch(handleReqError);
+  };
+  if (!initialGames) return <div>Error retriving games</div>;
+
+  return (
+    <>
+      <UpdateForm editingItem={editingItem} setEditingItem={setEditingItem} />
+      <div className="flex justify-end">
+        <button
+          className="btn-primary btn"
+          onClick={() => setIsAddModalShown((v) => !v)}
+        >
+          Create a Game
+        </button>
+      </div>
+      <form
+        onSubmit={handleSubmit(handleAddGame)}
+        className={clx(
+          "form-control fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs bg-slate-600 p-4 transition-all",
+          !isAddModalShown && "translate-x-full"
+        )}
+      >
+        <button
+          type="reset"
+          onClick={() => setIsAddModalShown((v) => !v)}
+          className="btn-xs btn-circle btn"
+        >
+          <XMarkIcon className="h-4 w-4" />
+        </button>
+        <label className="label">
+          <span className="label-text">Game Name</span>
+        </label>
+        <input
+          className="input-bordered input w-full max-w-xs"
+          type="text"
+          {...register("name")}
+        />
+        <p className="mt-2 text-error">{errors.name?.message}</p>
+        <label className="label">
+          <span className="label-text">NFT Contract Address</span>
+        </label>
+        <input
+          className="input-bordered input w-full max-w-xs"
+          type="text"
+          {...register("contractAddress")}
+        />
+        <p className="mt-2 text-error">{errors.contractAddress?.message}</p>
+        <input className="btn mt-4 w-full max-w-xs" type="submit" value="Add" />
+      </form>
+
+      <div className="mt-10 overflow-x-auto">
+        <table className="table-zebra table w-full">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Contract Address</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!!games &&
+              games.map((game) => (
+                <GameItemRow
+                  key={game.id}
+                  game={game}
+                  setEditingItem={setEditingItem}
+                />
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+
+const updateFormSchema = endpoints.game.updateGame.bodySchema;
+type UpdateFormData = z.infer<typeof updateFormSchema>;
+
+const UpdateForm = ({
+  editingItem,
+  setEditingItem,
+}: {
+  editingItem: Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null;
+  setEditingItem: Dispatch<
+    SetStateAction<
+      Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null
+    >
+  >;
+}) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UpdateFormData>({
+    resolver: zodResolver(updateFormSchema),
+    values: {
+      name: editingItem?.name || "",
+      contractAddress: editingItem?.contractAddress || "",
+    },
+  });
+
+  const handleUpdateGame = (data: UpdateFormData) => {
+    if (!editingItem) return;
+    promiseToast(
+      service(endpoints.game.updateGame)({
+        body: data,
+        param: { id: editingItem.id },
+      }).then(() => setEditingItem(null)),
+      { loading: "Updating Game" }
+    ).catch(handleReqError);
+  };
+  return (
+    <form
+      onSubmit={handleSubmit(handleUpdateGame)}
+      className={clx(
+        "form-control fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs bg-slate-600 p-4 transition-all",
+        !editingItem && "translate-x-full"
+      )}
+    >
+      <button
+        type="reset"
+        onClick={() => setEditingItem(null)}
+        className="btn-xs btn-circle btn"
+      >
+        <XMarkIcon className="h-4 w-4" />
+      </button>
+      <label className="label">
+        <span className="label-text">Game Name</span>
+      </label>
+      <input
+        className="input-bordered input w-full max-w-xs"
+        type="text"
+        {...register("name")}
+      />
+      <p className="mt-2 text-error">{errors.name?.message}</p>
+      <label className="label">
+        <span className="label-text">NFT Contract Address</span>
+      </label>
+      <input
+        className="input-bordered input w-full max-w-xs"
+        type="text"
+        {...register("contractAddress")}
+      />
+      <p className="mt-2 text-error">{errors.contractAddress?.message}</p>
+      <input
+        className="btn mt-4 w-full max-w-xs"
+        type="submit"
+        value="Update Game"
+      />
+    </form>
+  );
+};
+
+const GameItemRow = ({
+  game,
+  setEditingItem,
+}: {
+  game: Exclude<Awaited<ReturnType<typeof getter>>, null>[number];
+  setEditingItem: Dispatch<
+    SetStateAction<
+      Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null
+    >
+  >;
+}) => {
+  return (
+    <>
+      <tr>
+        <td>{game.name}</td>
+        <td>{game.contractAddress}</td>
+        <td>{game.status}</td>
+        <td>
+          <button
+            onClick={() => setEditingItem(game)}
+            className="btn-accent btn"
+          >
+            Edit
+          </button>
+        </td>
+      </tr>
+    </>
+  );
+};
+
+export default Games;

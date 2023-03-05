@@ -12,6 +12,7 @@
     "build": "tsc"
   },
   "dependencies": {
+    "ethers": "^5.7.2",
     "zod": "^3.20.6"
   }
 }

@@ -52,11 +52,12 @@ export const getAxios =
       });
       if (!!overrides?.url) url = overrides.url;
 
-      const parsedParams: any = query;
+      // const parsedParams: any = query;
+      // console.log({ query });
 
-      Object.keys(query as any).forEach(
-        (key) => (parsedParams[key] = JSON.stringify((query as any)[key]))
-      );
+      // Object.keys(query as any).forEach(
+      //   (key) => (parsedParams[key] = JSON.stringify((query as any)[key]))
+      // );
 
       return new Promise<R>((resolve, reject) =>
         axios
