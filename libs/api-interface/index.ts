@@ -67,7 +67,7 @@ const NFTResponseSchema = z.object({
 
 const SkipTakeSchema = z.object({
   skip: z.coerce.number().optional().default(0),
-  take: z.coerce.number().optional().default(10),
+  take: z.coerce.number().optional().default(100),
 });
 
 export const endpoints = {
@@ -158,6 +158,14 @@ export const endpoints = {
           prePlaced: z.string().nullable(),
           gameId: z.string(),
           nfts: NFTResponseSchema.array(),
+          enemy: z
+            .object({
+              id: z.string(),
+              name: z.string(),
+              strength: z.number(),
+              _count: z.object({ positions: z.number() }),
+            })
+            .nullable(),
         })
         .array(),
       querySchema: z
@@ -186,6 +194,30 @@ export const endpoints = {
       pattern: "map/remove-item/:id",
       method: "DELETE",
       paramSchema: z.object({ id: z.string() }),
+      responseSchema: z.string(),
+    },
+    assignEnemyToPosition: {
+      ...defaultConfig,
+      pattern: "map/assign-enemy",
+      method: "POST",
+      bodySchema: z.object({
+        x: z.number(),
+        y: z.number(),
+        color: z.string(),
+        gameId: z.string(),
+        strength: z.coerce.number().min(1),
+        name: z.string().min(1),
+      }),
+      responseSchema: z.string(),
+    },
+    expandEnemySize: {
+      ...defaultConfig,
+      pattern: "map/expand-enemy-size",
+      method: "POST",
+      bodySchema: z.object({
+        direction: z.enum(["TL", "TR", "BL", "BR", "L", "R"]),
+        enemyId: z.string(),
+      }),
       responseSchema: z.string(),
     },
   },

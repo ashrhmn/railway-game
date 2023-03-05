@@ -28,4 +28,5 @@ export const mapPositions = ({
       prePlaced: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      enemy: null,
     }));

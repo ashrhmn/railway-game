@@ -106,7 +106,7 @@ model MapPosition {
   prePlaced NFT_JOB?   @map("pre_placed")
   game      Game       @relation(fields: [gameId], references: [id])
   gameId    String     @map("game_id")
-  Enemy     Enemy?     @relation(fields: [enemyId], references: [id])
+  enemy     Enemy?     @relation(fields: [enemyId], references: [id])
   enemyId   String?
 
   @@unique([x, y, gameId, color])

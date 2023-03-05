@@ -68,4 +68,24 @@ export class MapController {
       this.mapService.removeItem,
     );
   }
+
+  @Roles("ADMIN")
+  @InferMethod(endpoints.map.assignEnemyToPosition)
+  assignEnemyToPosition(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.map.assignEnemyToPosition,
+      context,
+      this.mapService.assignEnemyToPosition,
+    );
+  }
+
+  @Roles("ADMIN")
+  @InferMethod(endpoints.map.expandEnemySize)
+  expandEnemySize(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.map.expandEnemySize,
+      context,
+      this.mapService.expandEnemySize,
+    );
+  }
 }
