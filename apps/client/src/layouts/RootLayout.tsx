@@ -42,7 +42,9 @@ const RootLayout = ({
             className={clx(
               isSidebarExpanded ? "col-span-10" : "col-span-10 xs:col-span-11",
               "bg-inherit",
-              "p-3"
+              "p-3",
+              "overflow-y-auto",
+              "h-[100vh]"
             )}
           >
             {children}

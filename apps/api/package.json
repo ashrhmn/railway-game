@@ -31,6 +31,7 @@
     "api-interface": "1.0.0",
     "argon2": "^0.30.3",
     "cookie-parser": "^1.4.6",
+    "csv-parser": "^3.0.0",
     "jsonwebtoken": "^9.0.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.3.0",

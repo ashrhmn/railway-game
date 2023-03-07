@@ -26,7 +26,7 @@ export class MapService {
       const data = await this.prisma.mapPosition.findMany({
         where: { gameId, color: COLOR[color] },
         include: {
-          nfts: { include: { nftMetadata: true } },
+          nfts: true,
           enemy: { include: { _count: { select: { positions: true } } } },
         },
         skip,

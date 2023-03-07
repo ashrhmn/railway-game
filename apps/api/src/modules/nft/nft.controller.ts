@@ -1,4 +1,11 @@
-import { Controller } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { endpoints } from "api-interface";
 import { Context, InferMethod } from "src/decorators";
 import { IContext } from "src/interfaces";
@@ -25,5 +32,15 @@ export class NftController {
       context,
       this.nftService.getAllNfts,
     );
+  }
+
+  @UseInterceptors(FileInterceptor("file"))
+  @Post("nfts/add-csv")
+  async addCsvNfts(
+    @UploadedFile()
+    file: { buffer: Iterable<any> | AsyncIterable<any>; mimetype: string },
+    @Body() body: { replace: string; game_id: string },
+  ) {
+    return this.nftService.addCsvNfts(file, body);
   }
 }

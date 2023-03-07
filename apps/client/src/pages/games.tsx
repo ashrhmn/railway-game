@@ -11,15 +11,15 @@ import { promiseToast } from "@/utils/toast.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { useQuery } from "@tanstack/react-query";
 
-const getter = (context?: GetServerSidePropsContext) =>
+const getAllGames = (context?: GetServerSidePropsContext) =>
   service(endpoints.game.getAll, context)({}).catch(() => null);
 
 type Props = {
-  games: Awaited<ReturnType<typeof getter>>;
+  games: Awaited<ReturnType<typeof getAllGames>>;
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const games = await getter(context);
+  const games = await getAllGames(context);
   return { props: { games } };
 };
 
@@ -37,11 +37,11 @@ const Games: NextPage<Props> = ({ games: initialGames }) => {
   });
   const { data: games, refetch } = useQuery({
     queryKey: ["games"],
-    queryFn: () => getter(),
+    queryFn: () => getAllGames(),
     initialData: initialGames,
   });
   const [editingItem, setEditingItem] = useState<
-    Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null
+    Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
   >(null);
   useEffect(() => {
     refetch();
@@ -137,10 +137,12 @@ const UpdateForm = ({
   editingItem,
   setEditingItem,
 }: {
-  editingItem: Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null;
+  editingItem:
+    | Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number]
+    | null;
   setEditingItem: Dispatch<
     SetStateAction<
-      Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null
+      Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
     >
   >;
 }) => {
@@ -212,10 +214,10 @@ const GameItemRow = ({
   game,
   setEditingItem,
 }: {
-  game: Exclude<Awaited<ReturnType<typeof getter>>, null>[number];
+  game: Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number];
   setEditingItem: Dispatch<
     SetStateAction<
-      Exclude<Awaited<ReturnType<typeof getter>>, null>[number] | null
+      Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
     >
   >;
 }) => {

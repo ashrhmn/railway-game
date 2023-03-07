@@ -52,17 +52,20 @@ const ValidAddressSchema = <S>(schema: ZodType<S>) =>
 
 const NFTResponseSchema = z.object({
   id: z.string(),
+  tokenId: z.number(),
   name: z.string(),
   description: z.string(),
   image: z.string(),
   isFrozen: z.boolean(),
   owner: z.string().nullable(),
-  nftMetadata: z.array(
-    z.object({
-      type: z.string(),
-      value: z.string(),
-    }),
-  ),
+  color: z.string(),
+  level: z.number(),
+  abilityB: z.number(),
+  abilityL: z.number(),
+  abilityR: z.number(),
+  abilityK: z.number(),
+  job: z.string(),
+  metadata: z.array(z.any()),
 });
 
 const SkipTakeSchema = z.object({
@@ -119,8 +122,23 @@ export const endpoints = {
     getAllNfts: {
       ...defaultConfig,
       pattern: "nfts",
-      responseSchema: NFTResponseSchema.array(),
-      querySchema: SkipTakeSchema,
+      responseSchema: z.object({
+        data: NFTResponseSchema.array(),
+        count: z.number(),
+      }),
+      querySchema: SkipTakeSchema.and(
+        z.object({
+          gameId: z.string().optional(),
+          color: z.string().optional(),
+          level: z.coerce.number().optional(),
+          owner: z.string().optional(),
+          abilityB: z.coerce.number().optional(),
+          abilityL: z.coerce.number().optional(),
+          abilityR: z.coerce.number().optional(),
+          abilityK: z.coerce.number().optional(),
+          isFrozen: z.boolean().optional(),
+        }),
+      ),
     },
     getNft: {
       ...defaultConfig,

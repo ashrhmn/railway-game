@@ -1,3 +1,4 @@
+import SelectColorGame from "@/components/common/SelectColorGame";
 import MapView from "@/components/map/MapView";
 import {
   getColors,
@@ -30,55 +31,29 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
 const Map: NextPage<Props> = ({ colors, games, mapItems, nftJobs }) => {
   const [selectedColor, setSelectedColor] = useState(
-    !!colors && typeof colors?.[0] === "string" ? colors[0] : ""
+    !!colors && typeof colors?.[0] === "string" ? colors[0] : undefined
   );
   const [selectedGameId, setSelectedGameId] = useState(
-    !!games && typeof games?.[0]?.id === "string" ? games[0].id : ""
+    !!games && typeof games?.[0]?.id === "string" ? games[0].id : undefined
   );
-  if (!games) return <div>Error retriving games</div>;
-  if (!colors) return <div>Error retriving colors</div>;
   return (
     <>
-      <div className="md:flex md:justify-end md:gap-2">
-        <div className="form-control w-full max-w-xs">
-          <label className="label">
-            <span className="label-text">Select a Game</span>
-          </label>
-          <select
-            value={selectedGameId}
-            onChange={(e) => setSelectedGameId(e.target.value)}
-            className="select-bordered select"
-          >
-            {games.map((game) => (
-              <option value={game.id} key={game.name}>
-                {game.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-control w-full max-w-xs">
-          <label className="label">
-            <span className="label-text">Select Map Color</span>
-          </label>
-          <select
-            value={selectedColor}
-            onChange={(e) => setSelectedColor(e.target.value)}
-            className="select-bordered select"
-          >
-            {colors.map((color) => (
-              <option value={color} key={color}>
-                {color}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <MapView
-        color={selectedColor}
-        gameId={selectedGameId}
-        mapItems={mapItems}
-        nftJobs={nftJobs}
+      <SelectColorGame
+        colors={colors}
+        games={games}
+        selectedColor={selectedColor}
+        selectedGameId={selectedGameId}
+        setSelectedColor={setSelectedColor}
+        setSelectedGameId={setSelectedGameId}
       />
+      {!!selectedColor && !!selectedGameId && (
+        <MapView
+          color={selectedColor}
+          gameId={selectedGameId}
+          mapItems={mapItems}
+          nftJobs={nftJobs}
+        />
+      )}
     </>
   );
 };

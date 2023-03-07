@@ -34,7 +34,7 @@ model NFTMetadata {
   value     String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  nfts      Nft[]
+  // nfts      Nft[]
 
   @@map("nft_metadata")
 }
@@ -67,6 +67,7 @@ enum NFT_JOB {
 
 model Nft {
   id          String        @id @default(cuid())
+  tokenId     Int           @default(autoincrement()) @map("token_id")
   name        String
   description String
   image       String
@@ -74,7 +75,8 @@ model Nft {
   owner       String?
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
-  nftMetadata NFTMetadata[]
+  // nftMetadata NFTMetadata[]
+  metadata    Json[]
   job         NFT_JOB
   color       COLOR
   level       Int           @default(1)
@@ -83,7 +85,10 @@ model Nft {
   abilityL    Int           @default(1) @map("ability_l")
   abilityK    Int           @default(1) @map("ability_k")
   mapPosition MapPosition[]
+  game        Game          @relation(fields: [gameId], references: [id])
+  gameId      String        @map("game_id")
 
+  @@unique([tokenId, gameId])
   @@map("nfts")
 }
 
@@ -138,6 +143,7 @@ model Game {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   mapPositions    MapPosition[]
+  nfts            Nft[]
 
   @@map("games")
 }
