@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   output: "standalone",
-  images: { domains: ["picsum.photos"] },
+  images: { domains: ["picsum.photos", "dummyimage.com"] },
   rewrites() {
     return [
       {

@@ -43,6 +43,15 @@ export class NftController {
     );
   }
 
+  @InferMethod(endpoints.nft.randomizeFixTokenId)
+  randomizeFixTokenId(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.nft.randomizeFixTokenId,
+      context,
+      this.nftService.randomizeFixTokenId,
+    );
+  }
+
   @UseInterceptors(FileInterceptor("file"))
   @Post("nfts/add-csv")
   async addCsvNfts(

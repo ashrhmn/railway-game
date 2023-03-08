@@ -6,6 +6,8 @@ import SelectColorGame from "../common/SelectColorGame";
 import axios from "axios";
 import { promiseToast } from "@/utils/toast.utils";
 import { handleReqError } from "@/utils/error.utils";
+import service from "@/service";
+import { endpoints } from "api-interface";
 
 type Props = {
   colors: Awaited<ReturnType<typeof getColors>>;
@@ -32,14 +34,21 @@ const AddNftsForm = ({
 }: Props) => {
   const handleFromSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!selectedGameId) return;
     const formdata = new FormData(e.currentTarget);
     formdata.append("game_id", selectedGameId || "");
     promiseToast(
-      axios.post("/api/nfts/add-csv", formdata, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }),
+      axios
+        .post("/api/nfts/add-csv", formdata, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        .then(() =>
+          service(endpoints.nft.randomizeFixTokenId)({
+            body: { gameId: selectedGameId },
+          })
+        ),
       {
         loading: "Adding NFTs",
         success: "NFTs added",
@@ -61,7 +70,7 @@ const AddNftsForm = ({
       <button
         type="reset"
         onClick={() => setShow((v) => !v)}
-        className="btn btn-xs btn-circle"
+        className="btn-xs btn-circle btn"
       >
         <XMarkIcon className="h-4 w-4" />
       </button>
@@ -90,7 +99,7 @@ const AddNftsForm = ({
           </span>
         </label>
       </div>
-      <button type="submit" className="btn btn-primary mt-4 w-full">
+      <button type="submit" className="btn-primary btn mt-4 w-full">
         Add
       </button>
     </form>

@@ -153,6 +153,15 @@ export const endpoints = {
       responseSchema: z.string(),
       paramSchema: z.object({ game_id: z.string() }),
     },
+    randomizeFixTokenId: {
+      ...defaultConfig,
+      pattern: "nfts/randomize-fix-token-id",
+      method: "POST",
+      responseSchema: z.string(),
+      bodySchema: z.object({
+        gameId: z.string(),
+      }),
+    },
   },
   map: {
     getColors: {

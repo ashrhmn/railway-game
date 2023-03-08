@@ -18,6 +18,7 @@ const TextTooltip = ({
     navigator.clipboard.writeText(text);
     toast.success(`Copied! ${text}`);
   };
+  if ((limit || 0) > text.length) return <>{text}</>;
   return (
     <span
       onClick={copyToClipBoard}

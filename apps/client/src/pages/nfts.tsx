@@ -74,6 +74,16 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
       .catch(handleReqError);
   }, [refetch, selectedGameId]);
 
+  const handleRandomizeTokenId = () => {
+    if (!selectedGameId) return;
+    promiseToast(
+      service(endpoints.nft.randomizeFixTokenId)({
+        body: { gameId: selectedGameId },
+      }).then(() => refetch()),
+      { loading: "Randomizing...", success: "Done" }
+    ).catch(handleReqError);
+  };
+
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
@@ -109,6 +119,9 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
         <label htmlFor="delete-modal" className="btn btn-error">
           Delete
         </label>
+        <button onClick={handleRandomizeTokenId} className="btn">
+          Randomize Token ID
+        </button>
         <input type="checkbox" id="delete-modal" className="modal-toggle" />
         <label htmlFor="delete-modal" className="modal cursor-pointer">
           <label className="modal-box relative" htmlFor="">

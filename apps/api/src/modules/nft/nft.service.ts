@@ -52,6 +52,7 @@ export class NftService {
           abilityB,
           isFrozen,
         },
+        orderBy: { tokenId: "asc" },
       });
       const count = await this.prisma.nft.count({
         where: {
@@ -117,7 +118,7 @@ export class NftService {
       .array()
       .parse(results);
 
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       if (replace) {
         await tx.nft.deleteMany({ where: { gameId: game_id } });
       }
@@ -146,7 +147,61 @@ export class NftService {
           ),
         })),
       });
+
       return "added";
     });
   }
+
+  randomizeFixTokenId = createAsyncService<
+    typeof endpoints.nft.randomizeFixTokenId
+  >(async ({ body: { gameId } }) => {
+    console.log(gameId);
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+      UPDATE
+        public.nfts
+      SET
+        "token_id" = "token_id" +(
+          SELECT
+            MAX(token_id)
+          FROM
+            public.nfts
+          WHERE
+            game_id = ${gameId}
+        )
+      WHERE
+        game_id = ${gameId};
+    `;
+
+      await tx.$queryRaw`
+      UPDATE
+        public.nfts
+      SET
+        "token_id" = sub.token_id
+      FROM
+        (
+          SELECT
+            *,
+            (
+              ROW_NUMBER() OVER()
+            )::INT AS token_id
+          FROM
+            (
+              SELECT
+                id
+              FROM
+                public.nfts
+              WHERE
+                game_id = ${gameId}
+              ORDER BY
+                RANDOM()
+            ) AS foo
+        ) AS sub
+      WHERE
+        nfts.id = sub.id;
+    `;
+
+      return "fixed";
+    });
+  });
 }
