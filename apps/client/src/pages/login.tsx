@@ -56,7 +56,7 @@ const Login = () => {
           />
         </div>
 
-        <button type="submit" onClick={handleSignIn} className="btn-accent btn">
+        <button type="submit" onClick={handleSignIn} className="btn btn-accent">
           Sign In
         </button>
       </form>

@@ -155,7 +155,6 @@ export class NftService {
   randomizeFixTokenId = createAsyncService<
     typeof endpoints.nft.randomizeFixTokenId
   >(async ({ body: { gameId } }) => {
-    console.log(gameId);
     return await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`
       UPDATE

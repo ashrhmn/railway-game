@@ -291,4 +291,69 @@ export const endpoints = {
       responseSchema: z.string(),
     },
   },
+  user: {
+    getAllUsers: {
+      ...defaultConfig,
+      pattern: "users",
+      responseSchema: z
+        .object({
+          id: z.string(),
+          username: z.string(),
+          name: z.string().nullable(),
+          roles: z.string().array(),
+        })
+        .array(),
+      querySchema: SkipTakeSchema,
+    },
+    createUser: {
+      ...defaultConfig,
+      pattern: "users",
+      method: "POST",
+      bodySchema: z.object({
+        username: z
+          .string()
+          .min(3, "Username too short")
+          .max(20, "Username too long"),
+        name: z.string().min(3, "Name too short").max(20, "Name too long"),
+        password: z
+          .string()
+          .min(3, "Password too short")
+          .max(20, "Password too long"),
+        roles: z.string().array(),
+      }),
+      responseSchema: z.string(),
+    },
+    updateUser: {
+      ...defaultConfig,
+      pattern: "users/:id",
+      method: "PUT",
+      bodySchema: z.object({
+        username: z
+          .string()
+          .min(3, "Username too short")
+          .max(20, "Username too long")
+          .optional(),
+        name: z
+          .string()
+          .min(3, "Name too short")
+          .max(20, "Name too long")
+          .optional(),
+        password: z
+          .string()
+          .min(3, "Password too short")
+          .max(20, "Password too long")
+          .optional(),
+        roles: z.string().array().optional(),
+      }),
+      paramSchema: z.object({ id: z.string() }),
+      responseSchema: z.string(),
+    },
+    deleteUser: {
+      ...defaultConfig,
+      pattern: "users/:id",
+      method: "DELETE",
+      paramSchema: z.object({ id: z.string() }),
+      responseSchema: z.string(),
+    },
+  },
 } as const;

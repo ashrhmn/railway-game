@@ -6,7 +6,6 @@ import {
   InferOutputsPromise,
 } from "api-interface";
 import { IContext } from "src/interfaces";
-import { ZodError } from "zod";
 
 export const createController = <P, Q, R, B>(
   {
