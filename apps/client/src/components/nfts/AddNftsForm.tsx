@@ -16,6 +16,7 @@ type Props = {
   setSelectedGameId: React.Dispatch<React.SetStateAction<string | undefined>>;
   show: boolean;
   setShow: React.Dispatch<React.SetStateAction<boolean>>;
+  refetch: () => void;
 };
 
 const AddNftsForm = ({
@@ -27,6 +28,7 @@ const AddNftsForm = ({
   selectedGameId,
   setSelectedColor,
   setSelectedGameId,
+  refetch,
 }: Props) => {
   const handleFromSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,7 +44,10 @@ const AddNftsForm = ({
         loading: "Adding NFTs",
         success: "NFTs added",
       }
-    ).catch(handleReqError);
+    )
+      .then(() => setShow(false))
+      .then(refetch)
+      .catch(handleReqError);
   };
 
   return (

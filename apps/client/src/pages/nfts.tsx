@@ -5,6 +5,8 @@ import service from "@/service";
 import { getColors, getGames } from "@/service/map.service";
 import { serverSideAuth } from "@/service/serverSideAuth";
 import { clx } from "@/utils/classname.utils";
+import { handleReqError } from "@/utils/error.utils";
+import { promiseToast } from "@/utils/toast.utils";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "api-interface";
 import { GetServerSideProps, NextPage } from "next";
@@ -38,7 +40,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
 
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
-  const { data } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: [
       "nfts",
       selectedColor || "all",
@@ -60,6 +62,18 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
     ),
   });
 
+  const handleDeleteNfts = useCallback(() => {
+    if (!selectedGameId) return;
+    promiseToast(
+      service(endpoints.nft.deleteAllNfts)({
+        param: { game_id: selectedGameId },
+      }),
+      { loading: "Deleting...", success: "Deleted" }
+    )
+      .then(() => refetch())
+      .catch(handleReqError);
+  }, [refetch, selectedGameId]);
+
   const [showAddForm, setShowAddForm] = useState(false);
 
   return (
@@ -73,6 +87,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
         selectedGameId={selectedGameId}
         setSelectedColor={setSelectedColor}
         setSelectedGameId={setSelectedGameId}
+        refetch={refetch}
       />
       <SelectColorGame
         colors={colors}
@@ -90,7 +105,30 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
         >
           Add
         </button>
-        <button className="btn btn-error">Delete</button>
+
+        <label htmlFor="delete-modal" className="btn btn-error">
+          Delete
+        </label>
+        <input type="checkbox" id="delete-modal" className="modal-toggle" />
+        <label htmlFor="delete-modal" className="modal cursor-pointer">
+          <label className="modal-box relative" htmlFor="">
+            <h3 className="text-lg font-bold">
+              Are you sure you want to delete all nfts from{" "}
+              {games?.find((g) => g.id === selectedGameId)?.name ||
+                selectedGameId}
+              ?
+            </h3>
+            <div className="modal-action">
+              <label
+                onClick={handleDeleteNfts}
+                htmlFor="delete-modal"
+                className="btn btn-warning"
+              >
+                Confirm
+              </label>
+            </div>
+          </label>
+        </label>
       </div>
 
       <div className="btn-group mt-8 flex flex-wrap items-center justify-end">
@@ -174,7 +212,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                 </td>
                 <td>{nft.isFrozen ? "Yes" : "No"}</td>
                 <td>
-                  <pre className="bg-neutral p-1">
+                  <pre className="max-h-60 overflow-y-auto bg-neutral p-1">
                     {JSON.stringify(nft.metadata, null, 2)}
                   </pre>
                 </td>

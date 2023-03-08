@@ -70,6 +70,13 @@ export class NftService {
     },
   );
 
+  deleteAllNfts = createAsyncService<typeof endpoints.nft.deleteAllNfts>(
+    async ({ param: { game_id } }) => {
+      await this.prisma.nft.deleteMany({ where: { gameId: game_id } });
+      return "deleted";
+    },
+  );
+
   async addCsvNfts(
     file: { buffer: Iterable<any> | AsyncIterable<any>; mimetype: string },
     body: { replace: string; game_id: string },

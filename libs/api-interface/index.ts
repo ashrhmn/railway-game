@@ -146,6 +146,13 @@ export const endpoints = {
       paramSchema: z.object({ id: z.string() }),
       responseSchema: NFTResponseSchema,
     },
+    deleteAllNfts: {
+      ...defaultConfig,
+      pattern: "nfts/:game_id",
+      method: "DELETE",
+      responseSchema: z.string(),
+      paramSchema: z.object({ game_id: z.string() }),
+    },
   },
   map: {
     getColors: {

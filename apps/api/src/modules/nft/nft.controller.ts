@@ -34,6 +34,15 @@ export class NftController {
     );
   }
 
+  @InferMethod(endpoints.nft.deleteAllNfts)
+  deleteAllNfts(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.nft.deleteAllNfts,
+      context,
+      this.nftService.deleteAllNfts,
+    );
+  }
+
   @UseInterceptors(FileInterceptor("file"))
   @Post("nfts/add-csv")
   async addCsvNfts(
