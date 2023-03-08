@@ -10,6 +10,7 @@ import {
   UserCircleIcon,
   PuzzlePieceIcon,
   ArrowLeftOnRectangleIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/solid";
 import { clx } from "@/utils/classname.utils";
 import { PageProps } from "@/layouts/RootLayout";
@@ -72,6 +73,12 @@ const Sidebar = ({
           href="/nfts"
         />
         <SidebarLinks
+          Icon={UserGroupIcon}
+          expanded={isSidebarExpanded}
+          text={"Users"}
+          href="/users"
+        />
+        <SidebarLinks
           Icon={Cog8ToothIcon}
           expanded={isSidebarExpanded}
           text={"Settings"}
@@ -114,7 +121,7 @@ const SidebarLinks = ({
     className={clx(
       "flex w-full items-center gap-2 text-xl",
       expanded ? "justify-center md:justify-start" : "justify-center",
-      "btn-ghost btn"
+      "btn btn-ghost"
     )}
     href={href}
   >

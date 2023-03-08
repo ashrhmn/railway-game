@@ -44,4 +44,13 @@ export class UserController {
       this.userService.deleteUser,
     );
   }
+
+  @InferMethod(endpoints.user.getRoles)
+  getRoles(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.user.getRoles,
+      context,
+      this.userService.getRoles,
+    );
+  }
 }

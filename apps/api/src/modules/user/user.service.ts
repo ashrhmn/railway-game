@@ -53,4 +53,8 @@ export class UserService {
       return "deleted";
     },
   );
+
+  getRoles = createAsyncService<typeof endpoints.user.getRoles>(async () => {
+    return Object.keys(ROLE);
+  });
 }

@@ -355,5 +355,10 @@ export const endpoints = {
       paramSchema: z.object({ id: z.string() }),
       responseSchema: z.string(),
     },
+    getRoles: {
+      ...defaultConfig,
+      pattern: "users/roles",
+      responseSchema: z.string().array(),
+    },
   },
 } as const;
