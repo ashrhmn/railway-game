@@ -13,6 +13,7 @@ datasource db {
 enum ROLE {
   ADMIN
   USER
+  GAMEDEV
 }
 
 model User {
@@ -26,17 +27,6 @@ model User {
   updatedAt          DateTime           @updatedAt @map("updated_at")
 
   @@map("users")
-}
-
-model NFTMetadata {
-  id        String   @id @default(cuid())
-  type      String
-  value     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  // nfts      Nft[]
-
-  @@map("nft_metadata")
 }
 
 enum COLOR {
@@ -75,7 +65,6 @@ model Nft {
   owner       String?
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
-  // nftMetadata NFTMetadata[]
   metadata    Json[]
   job         NFT_JOB
   color       COLOR
@@ -99,32 +88,34 @@ enum MAP_ITEMS {
 }
 
 model MapPosition {
-  id        String     @id @default(cuid())
-  x         Int
-  y         Int
-  color     COLOR
-  current   Boolean    @default(false)
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-  nfts      Nft[]
-  mapItem   MAP_ITEMS? @map("map_item")
-  prePlaced NFT_JOB?   @map("pre_placed")
-  game      Game       @relation(fields: [gameId], references: [id])
-  gameId    String     @map("game_id")
-  enemy     Enemy?     @relation(fields: [enemyId], references: [id])
-  enemyId   String?
+  id         String     @id @default(cuid())
+  x          Int
+  y          Int
+  color      COLOR
+  current    Boolean    @default(false)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  nfts       Nft[]
+  mapItem    MAP_ITEMS? @map("map_item")
+  prePlaced  NFT_JOB?   @map("pre_placed")
+  isRevealed Boolean    @default(false) @map("is_revealed")
+  game       Game       @relation(fields: [gameId], references: [id])
+  gameId     String     @map("game_id")
+  enemy      Enemy?     @relation(fields: [enemyId], references: [id])
+  enemyId    String?
 
   @@unique([x, y, gameId, color])
   @@map("map_positions")
 }
 
 model Enemy {
-  id        String        @id @default(cuid())
-  name      String
-  strength  Int
-  positions MapPosition[]
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  id              String        @id @default(cuid())
+  name            String
+  strength        Int
+  currentStrength Int           @map("current_strength")
+  positions       MapPosition[]
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   @@map("enemies")
 }

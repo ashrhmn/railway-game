@@ -6,9 +6,9 @@ async function seedUser() {
   await prisma.user.createMany({
     data: [
       {
-        username: "ashik",
+        username: "ash",
         password: await hash("ash"),
-        roles: ["USER", "ADMIN"],
+        roles: ["USER", "ADMIN", "GAMEDEV"],
       },
       {
         username: "admin",

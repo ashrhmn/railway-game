@@ -10,6 +10,8 @@ import { endpoints } from "api-interface";
 import React, { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import ErrorView from "../common/ErrorView";
+import FullScreenSpinner from "../common/FullScreenSpinner";
 
 type Props = {
   color: string;
@@ -59,12 +61,13 @@ const MapView = ({ color, gameId, mapItems, nftJobs }: Props) => {
       .catch(handleReqError);
   };
 
-  const { data, status, refetch } = useQuery({
+  const { data, status, refetch, error } = useQuery({
     queryKey: ["map-positions", color, gameId],
     queryFn: () =>
       service(endpoints.map.getPositions)({
         query: { color, gameId, take: 1000 },
       }),
+    retry: 0,
   });
   const positions = useMemo(() => {
     const def = mapPositions({ color, gameId });
@@ -82,8 +85,8 @@ const MapView = ({ color, gameId, mapItems, nftJobs }: Props) => {
     );
   }, [positions, selectedPoint.x, selectedPoint.y]);
 
-  if (status === "loading") return <div>Loading...</div>;
-  if (status === "error") return <div>Error getting map details</div>;
+  if (status === "loading") return <FullScreenSpinner />;
+  if (status === "error") return <ErrorView error={error} />;
   if (!mapItems) return <div>Error getting map items</div>;
   if (!nftJobs) return <div>Error getting nft jobs</div>;
 

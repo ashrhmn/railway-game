@@ -4,6 +4,7 @@ import { Context, InferMethod } from "src/decorators";
 import { IContext } from "src/interfaces";
 import { createAsyncController } from "src/utils/common.utils";
 import { GameService } from "./game.service";
+import { Roles } from "src/guards/roles.guard";
 
 @Controller()
 export class GameController {
@@ -18,6 +19,7 @@ export class GameController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.game.createGame)
   createGame(@Context() context: IContext) {
     return createAsyncController(
@@ -27,6 +29,7 @@ export class GameController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.game.updateGame)
   updateGame(@Context() context: IContext) {
     return createAsyncController(

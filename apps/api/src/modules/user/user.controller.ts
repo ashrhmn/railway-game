@@ -4,11 +4,13 @@ import { endpoints } from "api-interface";
 import { InferMethod, Context } from "src/decorators";
 import { IContext } from "src/interfaces";
 import { createAsyncController } from "src/utils/common.utils";
+import { Roles } from "src/guards/roles.guard";
 
 @Controller()
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.user.getAllUsers)
   getAllUsers(@Context() context: IContext) {
     return createAsyncController(
@@ -18,6 +20,7 @@ export class UserController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.user.createUser)
   createUser(@Context() context: IContext) {
     return createAsyncController(
@@ -27,6 +30,7 @@ export class UserController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.user.updateUser)
   updateUser(@Context() context: IContext) {
     return createAsyncController(
@@ -36,6 +40,7 @@ export class UserController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.user.deleteUser)
   deleteUser(@Context() context: IContext) {
     return createAsyncController(
@@ -45,6 +50,7 @@ export class UserController {
     );
   }
 
+  @Roles("ADMIN", "USER")
   @InferMethod(endpoints.user.getRoles)
   getRoles(@Context() context: IContext) {
     return createAsyncController(

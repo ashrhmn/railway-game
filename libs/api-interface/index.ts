@@ -319,7 +319,7 @@ export const endpoints = {
           .string()
           .min(3, "Password too short")
           .max(20, "Password too long"),
-        roles: z.string().array(),
+        roles: z.object({ id: z.number(), name: z.string() }).array(),
       }),
       responseSchema: z.string(),
     },
@@ -340,10 +340,10 @@ export const endpoints = {
           .optional(),
         password: z
           .string()
-          .min(3, "Password too short")
           .max(20, "Password too long")
+          .transform((v) => (v === "" ? undefined : v))
           .optional(),
-        roles: z.string().array().optional(),
+        roles: z.object({ id: z.number(), name: z.string() }).array(),
       }),
       paramSchema: z.object({ id: z.string() }),
       responseSchema: z.string(),
@@ -358,7 +358,7 @@ export const endpoints = {
     getRoles: {
       ...defaultConfig,
       pattern: "users/roles",
-      responseSchema: z.string().array(),
+      responseSchema: z.object({ id: z.number(), name: z.string() }).array(),
     },
   },
 } as const;

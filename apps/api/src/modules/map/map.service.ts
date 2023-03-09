@@ -122,6 +122,7 @@ export class MapService {
       data: {
         name,
         strength,
+        currentStrength: strength,
         positions: {
           connectOrCreate: {
             where: { x_y_gameId_color: { color: COLOR[color], gameId, x, y } },

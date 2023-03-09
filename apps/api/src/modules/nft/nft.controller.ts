@@ -11,6 +11,7 @@ import { Context, InferMethod } from "src/decorators";
 import { IContext } from "src/interfaces";
 import { createAsyncController } from "src/utils/common.utils";
 import { NftService } from "./nft.service";
+import { Roles } from "src/guards/roles.guard";
 
 @Controller()
 export class NftController {
@@ -34,6 +35,7 @@ export class NftController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.nft.deleteAllNfts)
   deleteAllNfts(@Context() context: IContext) {
     return createAsyncController(
@@ -43,6 +45,7 @@ export class NftController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.nft.randomizeFixTokenId)
   randomizeFixTokenId(@Context() context: IContext) {
     return createAsyncController(
@@ -52,6 +55,7 @@ export class NftController {
     );
   }
 
+  @Roles("ADMIN")
   @UseInterceptors(FileInterceptor("file"))
   @Post("nfts/add-csv")
   async addCsvNfts(

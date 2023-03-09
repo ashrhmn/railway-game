@@ -10,7 +10,7 @@ import { AuthService } from "./auth.service";
 
 @Controller()
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @InferMethod(endpoints.auth.login)
   login(@Context() context: IContext) {
@@ -21,14 +21,14 @@ export class AuthController {
     );
   }
 
-  @InferMethod(endpoints.auth.signup)
-  signup(@Context() context: IContext) {
-    return createAsyncController(
-      endpoints.auth.signup,
-      context,
-      this.authService.signup,
-    );
-  }
+  // @InferMethod(endpoints.auth.signup)
+  // signup(@Context() context: IContext) {
+  //   return createAsyncController(
+  //     endpoints.auth.signup,
+  //     context,
+  //     this.authService.signup,
+  //   );
+  // }
 
   @InferMethod(endpoints.auth.currentUser)
   currentUser(@Context() context: IContext) {

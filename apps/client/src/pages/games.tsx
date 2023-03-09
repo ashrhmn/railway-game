@@ -10,6 +10,7 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 import { promiseToast } from "@/utils/toast.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { useQuery } from "@tanstack/react-query";
+import { serverSideAuth } from "@/service/serverSideAuth";
 
 const getAllGames = (context?: GetServerSidePropsContext) =>
   service(endpoints.game.getAll, context)({}).catch(() => null);
@@ -19,6 +20,8 @@ type Props = {
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const auth = await serverSideAuth(context);
+  if (!("user" in auth.props)) return auth;
   const games = await getAllGames(context);
   return { props: { games } };
 };

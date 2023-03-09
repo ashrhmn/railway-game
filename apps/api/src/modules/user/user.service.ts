@@ -11,19 +11,19 @@ export class UserService {
 
   getAllUsers = createAsyncService<typeof endpoints.user.getAllUsers>(
     async () => {
-      return this.prisma.user.findMany();
+      return this.prisma.user.findMany({ orderBy: { createdAt: "desc" } });
     },
   );
 
   createUser = createAsyncService<typeof endpoints.user.createUser>(
     async ({ body: { name, password, roles, username } }) => {
-      if (!roles.every((r) => Object.keys(ROLE).includes(r)))
+      if (!roles.every((r) => Object.keys(ROLE).includes(r.name)))
         throw new BadRequestException("Invalid Role");
       await this.prisma.user.create({
         data: {
           username,
           password: await hash(password),
-          roles: roles as ROLE[],
+          roles: roles.map((r) => r.name) as ROLE[],
           name,
         },
       });
@@ -36,12 +36,17 @@ export class UserService {
       body: { name, password: plainPassword, roles, username },
       param: { id },
     }) => {
-      if (!!roles && !roles.every((r) => Object.keys(ROLE).includes(r)))
+      if (!!roles && !roles.every((r) => Object.keys(ROLE).includes(r.name)))
         throw new BadRequestException("Invalid Role");
       const password = !!plainPassword ? await hash(plainPassword) : undefined;
       await this.prisma.user.update({
         where: { id },
-        data: { name, password, username, roles: roles as ROLE[] | undefined },
+        data: {
+          name,
+          password,
+          username,
+          roles: roles.map((r) => r.name) as ROLE[] | undefined,
+        },
       });
       return "updated";
     },
@@ -55,6 +60,6 @@ export class UserService {
   );
 
   getRoles = createAsyncService<typeof endpoints.user.getRoles>(async () => {
-    return Object.keys(ROLE);
+    return Object.keys(ROLE).map((v, i) => ({ id: i, name: v }));
   });
 }

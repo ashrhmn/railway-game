@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -23,14 +24,14 @@ export class AuthService {
         },
       });
 
-      if (!user) throw new BadRequestException("Invalid Username or Password");
+      if (!user) throw new HttpException("Invalid Username or Password", 400);
 
       const isCorrectPassword = await verify(user.password, password).catch(
         () => false,
       );
 
       if (!isCorrectPassword)
-        throw new BadRequestException("Invalid Username or Password");
+        throw new HttpException("Invalid Username or Password", 400);
 
       const { access_token, refresh_token } = generateTokens(user);
       res.cookie("authorization", access_token, {
@@ -83,10 +84,9 @@ export class AuthService {
 
   currentUser = createAsyncService<typeof endpoints.auth.currentUser>(
     async (_, { user }) => {
-      // console.log("user : ", user);
       if (!!user) return user;
-      throw new UnauthorizedException();
-      // throw new HttpException("message", 401);
+      // throw new UnauthorizedException();
+      throw new HttpException("message", 401);
     },
   );
 
