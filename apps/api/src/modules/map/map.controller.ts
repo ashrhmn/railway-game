@@ -39,7 +39,7 @@ export class MapController {
     );
   }
 
-  @Roles("ADMIN")
+  @Roles("ADMIN", "GAMEDEV")
   @InferMethod(endpoints.map.getPositions)
   getPositions(@Context() context: IContext) {
     return createAsyncController(

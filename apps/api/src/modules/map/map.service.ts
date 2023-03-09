@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -22,9 +23,14 @@ export class MapService {
   });
 
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
-    async ({ query: { skip, take, color, gameId } }) => {
+    async ({ query: { skip, take, color, gameId } }, { user }) => {
+      if (!user) throw new HttpException("Unauthorized", 401);
       const data = await this.prisma.mapPosition.findMany({
-        where: { gameId, color: COLOR[color] },
+        where: {
+          gameId,
+          color: COLOR[color],
+          ...(user.roles.includes("GAMEDEV") ? { isRevealed: true } : {}),
+        },
         include: {
           nfts: true,
           enemy: { include: { _count: { select: { positions: true } } } },
