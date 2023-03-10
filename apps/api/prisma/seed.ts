@@ -8,7 +8,12 @@ async function seedUser() {
       {
         username: "ash",
         password: await hash("ash"),
-        roles: ["USER", "ADMIN", "GAMEDEV"],
+        roles: ["USER", "ADMIN"],
+      },
+      {
+        username: "dev",
+        password: await hash("dev"),
+        roles: ["GAMEDEV"],
       },
       {
         username: "admin",
@@ -65,13 +70,13 @@ async function seedNft(gameId: string) {
 
 async function main() {
   seedUser();
-  const game1 = await prisma.game.create({
-    data: { name: "game1", status: "WAITING" },
-  });
+  // const game1 = await prisma.game.create({
+  //   data: { name: "game1", status: "WAITING" },
+  // });
   // const game2 = await prisma.game.create({
   //   data: { name: "game2", status: "WAITING" },
   // });
-  seedNft(game1.id);
+  // seedNft(game1.id);
   // seedNft(game2.id);
 }
 main()

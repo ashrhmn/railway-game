@@ -88,4 +88,24 @@ export class MapController {
       this.mapService.expandEnemySize,
     );
   }
+
+  @Roles("GAMEDEV")
+  @InferMethod(endpoints.map.placeNftOnMap)
+  placeNftOnMap(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.map.placeNftOnMap,
+      context,
+      this.mapService.placeNftOnMap,
+    );
+  }
+
+  @Roles("GAMEDEV")
+  @InferMethod(endpoints.map.updateRailLocation)
+  updateRailLocation(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.map.updateRailLocation,
+      context,
+      this.mapService.updateRailLocation,
+    );
+  }
 }

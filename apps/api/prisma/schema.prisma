@@ -56,26 +56,26 @@ enum NFT_JOB {
 }
 
 model Nft {
-  id          String        @id @default(cuid())
-  tokenId     Int           @default(autoincrement()) @map("token_id")
-  name        String
-  description String
-  image       String
-  isFrozen    Boolean       @default(false)
-  owner       String?
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  metadata    Json[]
-  job         NFT_JOB
-  color       COLOR
-  level       Int           @default(1)
-  abilityR    Int           @default(1) @map("ability_r")
-  abilityB    Int           @default(1) @map("ability_b")
-  abilityL    Int           @default(1) @map("ability_l")
-  abilityK    Int           @default(1) @map("ability_k")
-  mapPosition MapPosition[]
-  game        Game          @relation(fields: [gameId], references: [id])
-  gameId      String        @map("game_id")
+  id           String        @id @default(cuid())
+  tokenId      Int           @default(autoincrement()) @map("token_id")
+  name         String
+  description  String
+  image        String
+  isFrozen     Boolean       @default(false)
+  owner        String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  metadata     Json[]
+  job          NFT_JOB
+  color        COLOR
+  level        Int           @default(1)
+  abilityR     Int           @default(1) @map("ability_r")
+  abilityB     Int           @default(1) @map("ability_b")
+  abilityL     Int           @default(1) @map("ability_l")
+  abilityK     Int           @default(1) @map("ability_k")
+  game         Game          @relation(fields: [gameId], references: [id])
+  gameId       String        @map("game_id")
+  mapPositions MapPosition[]
 
   @@unique([tokenId, gameId])
   @@map("nfts")
@@ -88,21 +88,22 @@ enum MAP_ITEMS {
 }
 
 model MapPosition {
-  id         String     @id @default(cuid())
-  x          Int
-  y          Int
-  color      COLOR
-  current    Boolean    @default(false)
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-  nfts       Nft[]
-  mapItem    MAP_ITEMS? @map("map_item")
-  prePlaced  NFT_JOB?   @map("pre_placed")
-  isRevealed Boolean    @default(false) @map("is_revealed")
-  game       Game       @relation(fields: [gameId], references: [id])
-  gameId     String     @map("game_id")
-  enemy      Enemy?     @relation(fields: [enemyId], references: [id])
-  enemyId    String?
+  id               String     @id @default(cuid())
+  x                Int
+  y                Int
+  color            COLOR
+  checkPointPassed Boolean    @default(false)
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  nft              Nft?       @relation(fields: [nftId], references: [id])
+  mapItem          MAP_ITEMS? @map("map_item")
+  prePlaced        NFT_JOB?   @map("pre_placed")
+  isRevealed       Boolean    @default(false) @map("is_revealed")
+  game             Game       @relation(fields: [gameId], references: [id])
+  gameId           String     @map("game_id")
+  enemy            Enemy?     @relation(fields: [enemyId], references: [id])
+  enemyId          String?
+  nftId            String?
 
   @@unique([x, y, gameId, color])
   @@map("map_positions")
@@ -120,7 +121,7 @@ model Enemy {
   @@map("enemies")
 }
 
-enum GameStatus {
+enum GAME_STATUS {
   WAITING
   RUNNING
   FINISHED
@@ -129,8 +130,9 @@ enum GameStatus {
 model Game {
   id              String        @id @default(cuid())
   name            String
-  status          GameStatus
+  status          GAME_STATUS
   contractAddress String?       @map("contract_address")
+  chainId         Int?          @map("chain_id")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
   mapPositions    MapPosition[]

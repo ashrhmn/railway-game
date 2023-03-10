@@ -18,6 +18,7 @@ type Props = {
   gameId: string;
   nftJobs: Awaited<ReturnType<typeof getNftJobs>>;
   mapItems: Awaited<ReturnType<typeof getMapItems>>;
+  roles: string[];
 };
 const directionSchema = endpoints.map.expandEnemySize.bodySchema.pick({
   direction: true,
@@ -25,7 +26,7 @@ const directionSchema = endpoints.map.expandEnemySize.bodySchema.pick({
 const assignEnemyInputSchema = endpoints.map.assignEnemyToPosition.bodySchema;
 type IAssignEnemyInput = z.infer<typeof assignEnemyInputSchema>;
 
-const MapView = ({ color, gameId, mapItems, nftJobs }: Props) => {
+const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
   const [selectedPoint, setSelectedPoint] = useState({ x: -1, y: -1 });
   const [selectedNftJob, setSelectedNftJob] = useState("NOT_SELECTED");
 
@@ -185,7 +186,9 @@ const MapView = ({ color, gameId, mapItems, nftJobs }: Props) => {
                     onClick={() => setSelectedPoint({ x: p.x, y: p.y })}
                     key={p.x + "" + p.y}
                   >
-                    {`${p.x},${p.y}`}
+                    {roles.includes("GAMEDEV") && !p.isRevealed
+                      ? null
+                      : `${p.x},${p.y}`}
                   </div>
                 ))}
             </div>

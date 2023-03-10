@@ -1,5 +1,6 @@
 import SelectColorGame from "@/components/common/SelectColorGame";
 import MapView from "@/components/map/MapView";
+import service from "@/service";
 import {
   getColors,
   getGames,
@@ -7,6 +8,7 @@ import {
   getMapItems,
 } from "@/service/map.service";
 import { serverSideAuth } from "@/service/serverSideAuth";
+import { getCurrentUser } from "@/service/user.service";
 import { GetServerSideProps, NextPage } from "next";
 import { useState } from "react";
 
@@ -15,6 +17,7 @@ type Props = {
   games: Awaited<ReturnType<typeof getGames>>;
   nftJobs: Awaited<ReturnType<typeof getNftJobs>>;
   mapItems: Awaited<ReturnType<typeof getMapItems>>;
+  user: Awaited<ReturnType<typeof getCurrentUser>>;
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -26,10 +29,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     getNftJobs(context),
     getMapItems(context),
   ]);
+
   return { props: { ...auth.props, colors, games, nftJobs, mapItems } };
 };
 
-const Map: NextPage<Props> = ({ colors, games, mapItems, nftJobs }) => {
+const Map: NextPage<Props> = ({
+  colors,
+  games,
+  mapItems,
+  nftJobs,
+  user: { roles },
+}) => {
+  console.log(roles);
   const [selectedColor, setSelectedColor] = useState(
     !!colors && typeof colors?.[0] === "string" ? colors[0] : undefined
   );
@@ -52,6 +63,7 @@ const Map: NextPage<Props> = ({ colors, games, mapItems, nftJobs }) => {
           gameId={selectedGameId}
           mapItems={mapItems}
           nftJobs={nftJobs}
+          roles={roles}
         />
       )}
     </>

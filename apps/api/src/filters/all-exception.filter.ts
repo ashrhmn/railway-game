@@ -6,6 +6,7 @@ import { fromZodError } from "zod-validation-error";
 @Catch()
 export class AllExceptionsFilter extends BaseExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    console.log({ exception });
     if (
       exception instanceof Error &&
       exception.message === "Forbidden resource" &&
@@ -16,8 +17,7 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
         message: "You are not authorized to perform this action",
         timestamp: new Date().toISOString(),
       });
-    }
-    if (exception instanceof ZodError) {
+    } else if (exception instanceof ZodError) {
       host
         .switchToHttp()
         .getResponse()

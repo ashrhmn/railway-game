@@ -104,6 +104,15 @@ const Games: NextPage<Props> = ({ games: initialGames }) => {
           {...register("contractAddress")}
         />
         <p className="mt-2 text-error">{errors.contractAddress?.message}</p>
+        <label className="label">
+          <span className="label-text">Chain ID</span>
+        </label>
+        <input
+          className="input-bordered input w-full max-w-xs"
+          type="text"
+          {...register("chainId")}
+        />
+        <p className="mt-2 text-error">{errors.chainId?.message}</p>
         <input className="btn mt-4 w-full max-w-xs" type="submit" value="Add" />
       </form>
 
@@ -113,6 +122,7 @@ const Games: NextPage<Props> = ({ games: initialGames }) => {
             <tr>
               <th>Name</th>
               <th>Contract Address</th>
+              <th>Chain ID</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -168,7 +178,7 @@ const UpdateForm = ({
         body: data,
         param: { id: editingItem.id },
       }).then(() => setEditingItem(null)),
-      { loading: "Updating Game" }
+      { loading: "Updating Game", success: "Game Updated" }
     ).catch(handleReqError);
   };
   return (
@@ -204,6 +214,24 @@ const UpdateForm = ({
         {...register("contractAddress")}
       />
       <p className="mt-2 text-error">{errors.contractAddress?.message}</p>
+      <label className="label">
+        <span className="label-text">Game Status</span>
+      </label>
+      <input
+        className="input-bordered input w-full max-w-xs"
+        type="text"
+        {...register("status")}
+      />
+      <p className="mt-2 text-error">{errors.status?.message}</p>
+      <label className="label">
+        <span className="label-text">Chain ID</span>
+      </label>
+      <input
+        className="input-bordered input w-full max-w-xs"
+        type="text"
+        {...register("chainId")}
+      />
+      <p className="mt-2 text-error">{errors.chainId?.message}</p>
       <input
         className="btn mt-4 w-full max-w-xs"
         type="submit"
@@ -229,6 +257,7 @@ const GameItemRow = ({
       <tr>
         <td>{game.name}</td>
         <td>{game.contractAddress}</td>
+        <td>{game.chainId}</td>
         <td>{game.status}</td>
         <td>
           <button

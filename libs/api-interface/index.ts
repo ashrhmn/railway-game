@@ -185,13 +185,14 @@ export const endpoints = {
       responseSchema: z
         .object({
           id: z.string(),
-          x: z.number(),
-          y: z.number(),
+          x: z.number().min(0).max(14),
+          y: z.number().min(0).max(14),
           color: z.string(),
           mapItem: z.string().nullable(),
           prePlaced: z.string().nullable(),
           gameId: z.string(),
-          nfts: NFTResponseSchema.array(),
+          isRevealed: z.boolean(),
+          nft: NFTResponseSchema.nullable(),
           enemy: z
             .object({
               id: z.string(),
@@ -214,8 +215,8 @@ export const endpoints = {
       pattern: "map/assign-item-to-position",
       method: "POST",
       bodySchema: z.object({
-        x: z.number(),
-        y: z.number(),
+        x: z.number().min(0).max(14),
+        y: z.number().min(0).max(14),
         color: z.string(),
         mapItem: z.string().optional(),
         prePlaced: z.string().optional(),
@@ -235,8 +236,8 @@ export const endpoints = {
       pattern: "map/assign-enemy",
       method: "POST",
       bodySchema: z.object({
-        x: z.number(),
-        y: z.number(),
+        x: z.number().min(0).max(14),
+        y: z.number().min(0).max(14),
         color: z.string(),
         gameId: z.string(),
         strength: z.coerce.number().min(1),
@@ -254,16 +255,43 @@ export const endpoints = {
       }),
       responseSchema: z.string(),
     },
+    placeNftOnMap: {
+      ...defaultConfig,
+      pattern: "map/place-nft",
+      method: "POST",
+      bodySchema: z.object({
+        x: z.number().min(0).max(14),
+        y: z.number().min(0).max(14),
+        color: z.string(),
+        gameId: z.string(),
+        nftId: z.string(),
+        walletAddress: z.string(),
+      }),
+      responseSchema: z.string(),
+    },
+    updateRailLocation: {
+      ...defaultConfig,
+      pattern: "map/update-rail-location",
+      method: "POST",
+      bodySchema: z.object({
+        x: z.number().min(0).max(14),
+        y: z.number().min(0).max(14),
+        color: z.string(),
+        gameId: z.string(),
+      }),
+      responseSchema: z.string(),
+    },
   },
   game: {
     getAll: {
       ...defaultConfig,
-      pattern: "game",
+      pattern: "games",
       responseSchema: z
         .object({
           id: z.string(),
           name: z.string(),
           contractAddress: z.string().nullable(),
+          chainId: z.number().nullable(),
           status: z.string(),
         })
         .array(),
@@ -271,21 +299,28 @@ export const endpoints = {
     },
     createGame: {
       ...defaultConfig,
-      pattern: "game",
+      pattern: "games",
       method: "POST",
       bodySchema: z.object({
         name: z.string().min(3, "Name too short").max(20, "Name too long"),
         contractAddress: ValidAddressSchema(z.string().optional()),
+        chainId: z.coerce.number().optional(),
       }),
       responseSchema: z.string(),
     },
     updateGame: {
       ...defaultConfig,
-      pattern: "game/:id",
+      pattern: "games/:id",
       method: "PUT",
       bodySchema: z.object({
         name: z.string().min(3, "Name too short").max(20, "Name too long"),
         contractAddress: ValidAddressSchema(z.string().optional()),
+        status: z
+          .string()
+          .optional()
+          .or(z.literal(""))
+          .transform((v) => (!!v ? v : undefined)),
+        chainId: z.coerce.number().optional(),
       }),
       paramSchema: z.object({ id: z.string() }),
       responseSchema: z.string(),
@@ -314,7 +349,11 @@ export const endpoints = {
           .string()
           .min(3, "Username too short")
           .max(20, "Username too long"),
-        name: z.string().min(3, "Name too short").max(20, "Name too long"),
+        name: z
+          .string()
+          .min(3, "Name too short")
+          .max(20, "Name too long")
+          .nullable(),
         password: z
           .string()
           .min(3, "Password too short")

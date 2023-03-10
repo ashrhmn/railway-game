@@ -24,9 +24,10 @@ export const mapPositions = ({
       current: false,
       mapItem: null,
       id: "",
-      nfts: [],
+      nft: null,
       prePlaced: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       enemy: null,
+      isRevealed: false,
     }));
