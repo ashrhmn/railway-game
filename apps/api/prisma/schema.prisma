@@ -88,22 +88,24 @@ enum MAP_ITEMS {
 }
 
 model MapPosition {
-  id               String     @id @default(cuid())
-  x                Int
-  y                Int
-  color            COLOR
-  checkPointPassed Boolean    @default(false)
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @updatedAt @map("updated_at")
-  nft              Nft?       @relation(fields: [nftId], references: [id])
-  mapItem          MAP_ITEMS? @map("map_item")
-  prePlaced        NFT_JOB?   @map("pre_placed")
-  isRevealed       Boolean    @default(false) @map("is_revealed")
-  game             Game       @relation(fields: [gameId], references: [id])
-  gameId           String     @map("game_id")
-  enemy            Enemy?     @relation(fields: [enemyId], references: [id])
-  enemyId          String?
-  nftId            String?
+  id                  String     @id @default(cuid())
+  x                   Int
+  y                   Int
+  color               COLOR
+  checkPointPassed    Boolean    @default(false)
+  bridgeConstructedOn Int        @default(0) @map("bridge_constructed_on")
+  railConstructedOn   Int        @default(0) @map("rail_constructed_on")
+  nft                 Nft?       @relation(fields: [nftId], references: [id])
+  mapItem             MAP_ITEMS? @map("map_item")
+  prePlaced           NFT_JOB?   @map("pre_placed")
+  isRevealed          Boolean    @default(false) @map("is_revealed")
+  game                Game       @relation(fields: [gameId], references: [id])
+  gameId              String     @map("game_id")
+  enemy               Enemy?     @relation(fields: [enemyId], references: [id])
+  enemyId             String?
+  nftId               String?
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
 
   @@unique([x, y, gameId, color])
   @@map("map_positions")
@@ -141,13 +143,23 @@ model Game {
   @@map("games")
 }
 
+enum SettingsValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+}
+
 model Settings {
-  id          String   @id @default(cuid())
-  key         String
-  value       String
+  id          String            @id @default(cuid())
+  key         String            @unique
+  strValue    String?           @map("str_value")
+  numValue    Float?            @map("num_value")
+  boolValue   Boolean?          @map("bool_value")
+  valueType   SettingsValueType @map("value_type")
+  title       String?
   description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
 
   @@map("settings")
 }

@@ -12,6 +12,7 @@ import { CONFIG } from "src/config/app.config";
 import { ethers } from "ethers";
 import { Position } from "src/classes/Position";
 import { timestamp } from "src/utils/date.utils";
+import { SETTINGS_KEY } from "src/enums/settings-key.enum";
 
 @Injectable()
 export class MapService {
@@ -321,7 +322,17 @@ export class MapService {
   );
 
   placeNftOnMap = createAsyncService<typeof endpoints.map.placeNftOnMap>(
-    async ({ body: { color, gameId, nftId, x, y, walletAddress } }) => {
+    async ({
+      body: {
+        color,
+        gameId,
+        nftId,
+        x,
+        y,
+        walletAddress,
+        additionalLightUpPositions,
+      },
+    }) => {
       return this.prisma.$transaction(async (tx) => {
         const game = await tx.game.findUnique({
           where: { id: gameId },
@@ -366,7 +377,13 @@ export class MapService {
 
         const mapPosition = await tx.mapPosition.findUnique({
           where: { x_y_gameId_color: { x, y, gameId, color } },
-          select: { enemy: true, mapItem: true, isRevealed: true },
+          select: {
+            enemy: true,
+            mapItem: true,
+            isRevealed: true,
+            bridgeConstructedOn: true,
+            id: true,
+          },
         });
 
         if (!mapPosition)
@@ -375,9 +392,13 @@ export class MapService {
         if (!mapPosition.isRevealed)
           throw new BadRequestException(`Map Position not revealed yet`);
 
+        if (!!mapPosition.mapItem && mapPosition.mapItem === "MOUNTAIN")
+          throw new BadRequestException(`No NFT can be placed on a mountain`);
+
         if (
           !!mapPosition.mapItem &&
           mapPosition.mapItem === "RIVER" &&
+          mapPosition.bridgeConstructedOn < timestamp() &&
           nft.job !== "BRIDGE"
         )
           throw new BadRequestException(
@@ -385,12 +406,149 @@ export class MapService {
           );
 
         if (
-          !!mapPosition.mapItem &&
-          mapPosition.mapItem !== MAP_ITEMS.CHECKPOINT
+          !!mapPosition.enemy &&
+          mapPosition.enemy.currentStrength > 0 &&
+          nft.job !== "KNIGHT"
         )
           throw new BadRequestException(
-            `Map Position already occupied by ${mapPosition.mapItem}`,
+            `NFT with id ${nftId}(${nft.job}) cannot be placed on an undefeated enemy. Only knight nft can be used on an undefeated enemy to defeat it`,
           );
+
+        if (nft.job === "BRIDGE") {
+          if (mapPosition.mapItem !== "RIVER")
+            throw new BadRequestException(
+              `NFT with id ${nftId}(${nft.job}) can only be placed on river`,
+            );
+
+          if (mapPosition.bridgeConstructedOn < timestamp())
+            throw new BadRequestException(
+              `A bridge is already constructed on this river`,
+            );
+
+          const bridgeConstructionBaseTime = await tx.settings.findUnique({
+            where: { key: SETTINGS_KEY.BRIDGE_CONSTRUCTION_TIME },
+            select: { numValue: true },
+          });
+
+          if (
+            !bridgeConstructionBaseTime ||
+            !bridgeConstructionBaseTime.numValue
+          )
+            throw new BadRequestException(`Bridge Construction Time not set`);
+
+          const bridgeConstructionTime =
+            bridgeConstructionBaseTime.numValue - (100 - nft.abilityB) / 100;
+
+          const bridgeConstructedOn = timestamp() + bridgeConstructionTime;
+
+          await tx.mapPosition.update({
+            where: { id: mapPosition.id },
+            data: { bridgeConstructedOn },
+          });
+        }
+
+        if (nft.job === "KNIGHT") {
+          if (!mapPosition.enemy)
+            throw new BadRequestException(
+              `Knight NFT can only be placed on an enemy`,
+            );
+
+          if (mapPosition.enemy.currentStrength <= 0)
+            throw new BadRequestException(
+              `Knight NFT can only be placed on an undefeated enemy. Enemy with id ${mapPosition.enemy.id} is already defeated`,
+            );
+
+          const decrement = Math.min(
+            mapPosition.enemy.currentStrength,
+            nft.abilityK,
+          );
+
+          await tx.enemy.update({
+            where: { id: mapPosition.enemy.id },
+            data: { currentStrength: { decrement } },
+          });
+        }
+
+        if (nft.job === "LIGHT") {
+          const positionsToReveal = [
+            { x, y },
+            ...(additionalLightUpPositions || []),
+          ];
+
+          if (positionsToReveal.length > nft.abilityL)
+            throw new BadRequestException(
+              `NFT with id ${nftId}(${nft.job}) can only light up ${nft.abilityL} positions, but ${positionsToReveal.length} positions requested`,
+            );
+
+          if (
+            positionsToReveal.some(
+              (ptr) => Math.abs(ptr.x - x) > 1 || Math.abs(ptr.y - y) > 1,
+            )
+          )
+            throw new BadRequestException(
+              `Additional Positions are not adjacent to root position`,
+            );
+
+          for (const { x, y } of positionsToReveal) {
+            await tx.mapPosition.upsert({
+              where: { x_y_gameId_color: { x, y, gameId, color } },
+              create: { x, y, color, gameId, isRevealed: true },
+              update: { isRevealed: true },
+            });
+          }
+        }
+
+        if (
+          Object.keys(NFT_JOB)
+            .filter((v) => v.startsWith("RAIL_"))
+            .includes(nft.job)
+        ) {
+          const railRoadConstructionBaseTime = await tx.settings.findUnique({
+            where: { key: SETTINGS_KEY.RAIL_CONSTRUCTION_TIME },
+            select: { numValue: true },
+          });
+
+          if (
+            !railRoadConstructionBaseTime ||
+            !railRoadConstructionBaseTime.numValue
+          )
+            throw new BadRequestException(
+              `Rail Road Construction Time not set`,
+            );
+
+          const railRoadConstructionTime =
+            railRoadConstructionBaseTime.numValue *
+            ((100 - nft.abilityR) / 100);
+
+          const railConstructedOn = timestamp() + railRoadConstructionTime;
+
+          await tx.mapPosition.upsert({
+            where: { x_y_gameId_color: { x, y, gameId, color } },
+            create: {
+              x,
+              y,
+              color,
+              gameId,
+              railConstructedOn,
+            },
+            update: {
+              railConstructedOn,
+            },
+          });
+        }
+
+        const nftFrozenTime = await tx.settings.findUnique({
+          where: { key: SETTINGS_KEY.NFT_LOCK_TIME },
+          select: { numValue: true },
+        });
+
+        if (!nftFrozenTime || !nftFrozenTime.numValue)
+          throw new BadRequestException(`NFT Frozen Time not set`);
+
+        await tx.nft.update({
+          where: { id: nft.id },
+          data: { frozenTill: timestamp() + nftFrozenTime.numValue },
+        });
 
         await tx.mapPosition.upsert({
           where: { x_y_gameId_color: { x, y, gameId, color } },

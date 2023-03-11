@@ -192,6 +192,9 @@ export const endpoints = {
           gameId: z.string(),
           isRevealed: z.boolean(),
           nft: NFTResponseSchema.nullable(),
+          checkPointPassed: z.boolean(),
+          bridgeConstructedOn: z.number(),
+          railConstructedOn: z.number(),
           enemy: z
             .object({
               id: z.string(),
@@ -265,6 +268,13 @@ export const endpoints = {
         gameId: z.string(),
         nftId: z.string(),
         walletAddress: z.string(),
+        additionalLightUpPositions: z
+          .object({
+            x: z.number().min(0).max(14),
+            y: z.number().min(0).max(14),
+          })
+          .array()
+          .optional(),
       }),
       responseSchema: z.string(),
     },
