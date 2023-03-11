@@ -35,7 +35,6 @@ export class NftService {
         abilityK,
         abilityL,
         abilityR,
-        isFrozen,
       },
     }) => {
       const nfts = await this.prisma.nft.findMany({
@@ -50,7 +49,6 @@ export class NftService {
           abilityL,
           abilityK,
           abilityB,
-          isFrozen,
         },
         orderBy: { tokenId: "asc" },
       });
@@ -64,7 +62,6 @@ export class NftService {
           abilityL,
           abilityK,
           abilityB,
-          isFrozen,
         },
       });
       return { data: nfts, count };

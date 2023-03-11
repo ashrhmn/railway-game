@@ -1,6 +1,6 @@
 import service from "@/service";
 import { endpoints } from "api-interface";
-import { GetServerSideProps, GetServerSidePropsContext, NextPage } from "next";
+import { GetServerSideProps, NextPage } from "next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,25 +11,31 @@ import { promiseToast } from "@/utils/toast.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { useQuery } from "@tanstack/react-query";
 import { serverSideAuth } from "@/service/serverSideAuth";
-
-const getAllGames = (context?: GetServerSidePropsContext) =>
-  service(endpoints.game.getAll, context)({}).catch(() => null);
+import { getAllGames, getAllGameStatus } from "@/service/game.service";
 
 type Props = {
   games: Awaited<ReturnType<typeof getAllGames>>;
+  user: Awaited<ReturnType<typeof serverSideAuth>>;
+  allStatus: Awaited<ReturnType<typeof getAllGameStatus>>;
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const auth = await serverSideAuth(context);
-  if (!("user" in auth.props)) return auth;
-  const games = await getAllGames(context);
-  return { props: { games } };
+  // if (!("user" in auth.props)) return auth;
+
+  if ("redirect" in auth) return auth;
+  const [games, allStatus] = await Promise.all([
+    getAllGames(context),
+    getAllGameStatus(context),
+  ]);
+
+  return { props: { ...auth.props, games, allStatus } };
 };
 
 const createFormSchema = endpoints.game.createGame.bodySchema;
 type CreateFormData = z.infer<typeof createFormSchema>;
 
-const Games: NextPage<Props> = ({ games: initialGames }) => {
+const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
   const [isAddModalShown, setIsAddModalShown] = useState(false);
   const {
     register,
@@ -63,7 +69,11 @@ const Games: NextPage<Props> = ({ games: initialGames }) => {
 
   return (
     <>
-      <UpdateForm editingItem={editingItem} setEditingItem={setEditingItem} />
+      <UpdateForm
+        editingItem={editingItem}
+        setEditingItem={setEditingItem}
+        allStatus={allStatus}
+      />
       <div className="flex justify-end">
         <button
           className="btn-primary btn"
@@ -149,6 +159,7 @@ type UpdateFormData = z.infer<typeof updateFormSchema>;
 const UpdateForm = ({
   editingItem,
   setEditingItem,
+  allStatus,
 }: {
   editingItem:
     | Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number]
@@ -158,6 +169,7 @@ const UpdateForm = ({
       Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
     >
   >;
+  allStatus: Props["allStatus"];
 }) => {
   const {
     register,
@@ -217,11 +229,14 @@ const UpdateForm = ({
       <label className="label">
         <span className="label-text">Game Status</span>
       </label>
-      <input
-        className="input-bordered input w-full max-w-xs"
-        type="text"
-        {...register("status")}
-      />
+      <select className="select" {...register("status")}>
+        {!!allStatus &&
+          allStatus.map((status) => (
+            <option key={status.id} value={status.name}>
+              {status.name}
+            </option>
+          ))}
+      </select>
       <p className="mt-2 text-error">{errors.status?.message}</p>
       <label className="label">
         <span className="label-text">Chain ID</span>

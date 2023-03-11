@@ -38,4 +38,13 @@ export class GameController {
       this.gameService.updateGame,
     );
   }
+
+  @InferMethod(endpoints.game.getAllStatus)
+  getAllStatus(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.game.getAllStatus,
+      context,
+      this.gameService.getAllStatus,
+    );
+  }
 }

@@ -5,10 +5,9 @@ import service from ".";
 export const serverSideAuth = async (context: GetServerSidePropsContext) =>
   service(
     endpoints.auth.currentUser,
-    context,
+    context
   )({})
     .then((user) => ({ props: { user } }))
     .catch(() => ({
-      props: {},
-      redirect: { destination: "/login", statusCode: 301 },
+      redirect: { destination: "/login", permanent: true },
     }));

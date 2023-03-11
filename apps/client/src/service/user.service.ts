@@ -12,4 +12,4 @@ export const getRoles = (context?: GetServerSidePropsContext) =>
   service(endpoints.user.getRoles, context)({}).catch(() => null);
 
 export const getCurrentUser = (context?: GetServerSidePropsContext) =>
-  service(endpoints.auth.currentUser)({});
+  service(endpoints.auth.currentUser, context)({});

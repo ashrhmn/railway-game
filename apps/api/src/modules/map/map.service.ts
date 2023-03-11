@@ -10,8 +10,8 @@ import { createAsyncService, createService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
 import { CONFIG } from "src/config/app.config";
 import { ethers } from "ethers";
-import Sample721Artifact from "../../ABIs/Sample721.json";
 import { Position } from "src/classes/Position";
+import { timestamp } from "src/utils/date.utils";
 
 @Injectable()
 export class MapService {
@@ -336,11 +336,13 @@ export class MapService {
           );
 
         if (!game.chainId || isNaN(game.chainId))
-          throw new BadRequestException(`Invalid chainId ${game.chainId}`);
+          throw new BadRequestException(
+            `Invalid contract chainId : ${game.chainId}`,
+          );
 
         const nft = await tx.nft.findUnique({ where: { id: nftId } });
         if (!nft) throw new NotFoundException(`NFT with id ${nftId} not found`);
-        if (nft.isFrozen)
+        if (nft.frozenTill > timestamp())
           throw new BadRequestException(`NFT with id ${nftId} is frozen`);
 
         const contract = new ethers.Contract(
@@ -360,9 +362,7 @@ export class MapService {
             `NFT with id ${nftId} does not belong to game with id ${gameId}`,
           );
         if (nft.color !== color)
-          throw new BadRequestException(
-            `NFT with id ${nftId} does not belong to color ${color}`,
-          );
+          throw new BadRequestException(`NFT with id ${nftId} is not ${color}`);
 
         const mapPosition = await tx.mapPosition.findUnique({
           where: { x_y_gameId_color: { x, y, gameId, color } },

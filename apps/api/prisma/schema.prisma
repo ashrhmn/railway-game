@@ -61,7 +61,7 @@ model Nft {
   name         String
   description  String
   image        String
-  isFrozen     Boolean       @default(false)
+  frozenTill   Int           @default(0) @map("frozen_till")
   owner        String?
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")

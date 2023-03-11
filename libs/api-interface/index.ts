@@ -56,7 +56,7 @@ const NFTResponseSchema = z.object({
   name: z.string(),
   description: z.string(),
   image: z.string(),
-  isFrozen: z.boolean(),
+  frozenTill: z.number(),
   owner: z.string().nullable(),
   color: z.string(),
   level: z.number(),
@@ -136,7 +136,6 @@ export const endpoints = {
           abilityL: z.coerce.number().optional(),
           abilityR: z.coerce.number().optional(),
           abilityK: z.coerce.number().optional(),
-          isFrozen: z.boolean().optional(),
         }),
       ),
     },
@@ -324,6 +323,16 @@ export const endpoints = {
       }),
       paramSchema: z.object({ id: z.string() }),
       responseSchema: z.string(),
+    },
+    getAllStatus: {
+      ...defaultConfig,
+      pattern: "games/status",
+      responseSchema: z
+        .object({
+          id: z.string(),
+          name: z.string(),
+        })
+        .array(),
     },
   },
   user: {

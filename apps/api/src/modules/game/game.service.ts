@@ -128,4 +128,13 @@ export class GameService {
       return "success";
     },
   );
+
+  getAllStatus = createAsyncService<typeof endpoints.game.getAllStatus>(
+    async () => {
+      return Object.keys(GAME_STATUS).map((name) => ({
+        name,
+        id: name,
+      }));
+    },
+  );
 }

@@ -1,6 +1,6 @@
 import SelectColorGame from "@/components/common/SelectColorGame";
 import MapView from "@/components/map/MapView";
-import service from "@/service";
+
 import {
   getColors,
   getGames,
@@ -22,7 +22,7 @@ type Props = {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const auth = await serverSideAuth(context);
-  if (!("user" in auth.props)) return auth;
+  if ("redirect" in auth) return auth;
   const [colors, games, nftJobs, mapItems] = await Promise.all([
     getColors(context),
     getGames(context),
@@ -40,7 +40,6 @@ const Map: NextPage<Props> = ({
   nftJobs,
   user: { roles },
 }) => {
-  console.log(roles);
   const [selectedColor, setSelectedColor] = useState(
     !!colors && typeof colors?.[0] === "string" ? colors[0] : undefined
   );
