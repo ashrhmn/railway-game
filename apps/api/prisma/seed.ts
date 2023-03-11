@@ -52,7 +52,7 @@ async function seedNft(gameId: string) {
         abilityK: Math.round(Math.random() * 4),
         abilityL: Math.round(Math.random() * 4),
         abilityR: Math.round(Math.random() * 4),
-        isFrozen: Math.round(Math.random() * 40) % 2 === 0,
+        frozenTill: 0,
         level: Math.round(Math.random() * 4),
         metadata: [
           {

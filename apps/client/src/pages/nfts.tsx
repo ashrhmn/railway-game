@@ -5,6 +5,7 @@ import service from "@/service";
 import { getColors, getGames } from "@/service/map.service";
 import { serverSideAuth } from "@/service/serverSideAuth";
 import { clx } from "@/utils/classname.utils";
+import { timestamp } from "@/utils/date.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { promiseToast } from "@/utils/toast.utils";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +21,7 @@ type Props = {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const auth = await serverSideAuth(context);
-  if (!("user" in auth.props)) return auth;
+  if ("redirect" in auth) return auth;
   const [colors, games] = await Promise.all([
     getColors(context),
     getGames(context),
@@ -223,7 +224,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                 <td>
                   <TextTooltip text={nft.owner || ""} limit={15} />
                 </td>
-                <td>{nft.isFrozen ? "Yes" : "No"}</td>
+                <td>{nft.frozenTill > timestamp() ? "Yes" : "No"}</td>
                 <td>
                   <pre className="max-h-60 overflow-y-auto bg-neutral p-1">
                     {JSON.stringify(nft.metadata, null, 2)}

@@ -4,6 +4,7 @@ import { shortenString } from "./string.utils";
 import { fromZodError } from "zod-validation-error";
 
 export const extractReqError = (reason: unknown) => {
+  console.log("extract-req-error", { reason });
   if (reason instanceof z.ZodError) {
     return fromZodError(reason).toString();
   }

@@ -1,4 +1,5 @@
 import ErrorView from "@/components/common/ErrorView";
+import FullScreenSpinner from "@/components/common/FullScreenSpinner";
 import AddUsersForm from "@/components/users/AddUsersForm";
 import EditUsersForm from "@/components/users/EditUserForm";
 import service from "@/service";
@@ -18,7 +19,7 @@ type Props = {
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const auth = await serverSideAuth(context);
-  if (!("user" in auth.props)) return auth;
+  if ("redirect" in auth) return auth;
   const [users, roles] = await Promise.all([
     getUsers(context),
     getRoles(context),
@@ -29,15 +30,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 const UserPage: NextPage<Props> = ({ users: initialUsers, roles }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingUser, setEditingUser] = useState<
-    Exclude<Awaited<ReturnType<typeof getUsers>>["data"], null>[number] | null
+    Exclude<Awaited<ReturnType<typeof getUsers>>, null>[number] | null
   >(null);
   const {
-    data: { data: users, error },
+    data: users,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["users"],
-    queryFn: () => getUsers(),
+    queryFn: () => service(endpoints.user.getAllUsers)({}),
     initialData: initialUsers,
+    retry: false,
   });
   const handleDeleteUser = (id: string) =>
     promiseToast(
@@ -53,7 +56,9 @@ const UserPage: NextPage<Props> = ({ users: initialUsers, roles }) => {
         error: "Error deleting user",
       }
     );
-  if (!users) return <ErrorView error={error} />;
+
+  if (!!error) return <ErrorView error={error} />;
+  if (!users) return <FullScreenSpinner />;
   if (!roles) return <div>Error retrieving roles</div>;
   return (
     <div>
@@ -105,13 +110,13 @@ const UserPage: NextPage<Props> = ({ users: initialUsers, roles }) => {
                 <td className="flex items-center gap-2">
                   <label
                     onClick={() => setEditingUser(user)}
-                    className="btn-secondary btn"
+                    className="btn btn-secondary"
                     htmlFor="edit-modal"
                   >
                     Edit
                   </label>
                   <button
-                    className="btn-warning btn"
+                    className="btn btn-warning"
                     onClick={() => handleDeleteUser(user.id)}
                   >
                     Delete

@@ -377,6 +377,15 @@ export class MapService {
 
         if (
           !!mapPosition.mapItem &&
+          mapPosition.mapItem === "RIVER" &&
+          nft.job !== "BRIDGE"
+        )
+          throw new BadRequestException(
+            `NFT with id ${nftId}(${nft.job}) cannot be placed on river. Only bridge nft can be placed on a river`,
+          );
+
+        if (
+          !!mapPosition.mapItem &&
           mapPosition.mapItem !== MAP_ITEMS.CHECKPOINT
         )
           throw new BadRequestException(
