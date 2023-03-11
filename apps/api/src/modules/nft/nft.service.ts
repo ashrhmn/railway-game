@@ -14,7 +14,7 @@ export class NftService {
 
   getNft = createAsyncService<typeof endpoints.nft.getNft>(
     async ({ param: { id } }) => {
-      const nft = await this.prisma.nft.findFirst({
+      const nft = await this.prisma.nft.findUnique({
         where: { id },
       });
       if (!nft) throw new HttpException("NFT not found", 404);

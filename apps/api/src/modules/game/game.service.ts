@@ -22,6 +22,13 @@ export class GameService {
         const game = await tx.game.create({
           data: { name, contractAddress, status: "WAITING", chainId },
         });
+        await tx.railPosition.createMany({
+          data: Object.keys(COLOR).map((color) => ({
+            color: color as COLOR,
+            gameId: game.id,
+          })),
+          skipDuplicates: true,
+        });
         const root = new Position(14, 14);
         const data = [
           root,
@@ -44,74 +51,7 @@ export class GameService {
             })),
           )
           .reduce((acc, val) => acc.concat(val), []);
-        await tx.mapPosition.createMany({
-          data,
-          // data: [
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 14,
-          //     y: 14,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 13,
-          //     y: 14,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 14,
-          //     y: 13,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 13,
-          //     y: 13,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 14,
-          //     y: 12,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 13,
-          //     y: 12,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   // ...Object.keys(COLOR).map((color) => ({
-          //   //   gameId: game.id,
-          //   //   x: 12,
-          //   //   y: 12,
-          //   //   isRevealed: true,
-          //   //   color: color as COLOR,
-          //   // })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 12,
-          //     y: 13,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          //   ...Object.keys(COLOR).map((color) => ({
-          //     gameId: game.id,
-          //     x: 12,
-          //     y: 14,
-          //     isRevealed: true,
-          //     color: color as COLOR,
-          //   })),
-          // ],
-        });
+        await tx.mapPosition.createMany({ data });
         return "success";
       });
     },

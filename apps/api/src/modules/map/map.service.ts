@@ -13,6 +13,7 @@ import { ethers } from "ethers";
 import { Position } from "src/classes/Position";
 import { timestamp } from "src/utils/date.utils";
 import { SETTINGS_KEY } from "src/enums/settings-key.enum";
+import { getRandomNumber } from "src/utils/number.utils";
 
 @Injectable()
 export class MapService {
@@ -102,7 +103,7 @@ export class MapService {
   removeItem = createAsyncService<typeof endpoints.map.removeItem>(
     async ({ param: { id } }) => {
       return this.prisma.$transaction(async (tx) => {
-        const position = await tx.mapPosition.findFirst({ where: { id } });
+        const position = await tx.mapPosition.findUnique({ where: { id } });
         await tx.mapPosition.delete({ where: { id } });
         if (position?.enemyId)
           await tx.mapPosition.deleteMany({
@@ -575,6 +576,7 @@ export class MapService {
 
       const mapPosition = await tx.mapPosition.findUnique({
         where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
+        include: { enemy: true },
       });
 
       if (!mapPosition)
@@ -583,29 +585,65 @@ export class MapService {
       if (!mapPosition.isRevealed)
         throw new BadRequestException(`Map Position not revealed yet`);
 
-      if (!!mapPosition.mapItem && mapPosition.mapItem !== MAP_ITEMS.CHECKPOINT)
+      if (mapPosition.mapItem === "MOUNTAIN")
+        throw new BadRequestException(`Can not travel on a maountain`);
+
+      if (
+        mapPosition.mapItem === "RIVER" &&
+        mapPosition.bridgeConstructedOn > timestamp()
+      )
         throw new BadRequestException(
-          `Map Position already occupied by ${mapPosition.mapItem}`,
+          `Can not travel on a river with no bridge constructed on it`,
         );
 
-      if (!!mapPosition.enemyId)
-        throw new BadRequestException(`Map Position already occupied by enemy`);
+      if (!!mapPosition.enemy && mapPosition.enemy.currentStrength > 0)
+        throw new BadRequestException(`Can not travel on an undefeated enemy`);
 
-      if (!mapPosition.nftId)
+      const currentRailPosition = await tx.railPosition.findFirst({
+        where: { color: color as COLOR, gameId },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (!currentRailPosition)
+        throw new BadRequestException(`No Rail NFT placed`);
+
+      if (
+        Math.round(currentRailPosition.createdAt.valueOf() / 1000) >
+        timestamp() - 10 * 60 // 10 minutes
+      )
         throw new BadRequestException(
-          `No Rail NFT placed on the specified position`,
+          `Can not move rail before 10 minutes of last movement`,
         );
+
+      if (
+        Math.abs(currentRailPosition.x - x) > 1 ||
+        Math.abs(currentRailPosition.y - y) > 1
+      )
+        throw new BadRequestException(
+          `Can not travel more than 1 square at a time`,
+        );
+
+      // if (!!mapPosition.mapItem && mapPosition.mapItem !== MAP_ITEMS.CHECKPOINT)
+      //   throw new BadRequestException(
+      //     `Map Position already occupied by ${mapPosition.mapItem}`,
+      //   );
+
+      // if (!!mapPosition.enemyId)
+      //   throw new BadRequestException(`Map Position already occupied by enemy`);
+
+      // if (!mapPosition.nftId)
+      //   throw new BadRequestException(
+      //     `No Rail NFT placed on the specified position`,
+      //   );
+
+      await tx.railPosition.create({
+        data: { x, y, color: color as COLOR, gameId },
+      });
 
       if (mapPosition.mapItem === MAP_ITEMS.CHECKPOINT)
         await tx.mapPosition.upsert({
           where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
-          update: {
-            color: color as COLOR,
-            x,
-            y,
-            gameId,
-            checkPointPassed: true,
-          },
+          update: { checkPointPassed: true },
           create: {
             color: color as COLOR,
             x,
@@ -632,17 +670,14 @@ export class MapService {
         root.left().left(),
         root.left().left().up(),
         root.left().left().down(),
-
         //  2 square away up
         root.up().up(),
         root.up().up().left(),
         root.up().up().right(),
-
         //  2 square away right
         root.right().right(),
         root.right().right().up(),
         root.right().right().down(),
-
         //  2 square away down
         root.down().down(),
         root.down().down().left(),
@@ -659,6 +694,34 @@ export class MapService {
           create: { x, y, color: color as COLOR, gameId, isRevealed: true },
           update: { x, y, color: color as COLOR, gameId, isRevealed: true },
         });
+      }
+      if (x === 14 && y === 14) {
+        await tx.game.update({
+          where: { id: gameId },
+          data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
+        });
+        const nfts = await tx.nft.findMany({
+          where: { gameId, color: color as COLOR },
+          select: { id: true },
+        });
+        // TODO: update BLKR values
+        (async () => {
+          for (const { id } of nfts) {
+            const job =
+              Object.keys(NFT_JOB)[
+                getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
+              ];
+            const color =
+              Object.keys(COLOR)[
+                getRandomNumber(0, Object.keys(COLOR).length - 1)
+              ];
+            if (!job || !color) throw new Error("Invalid random job or color");
+            await tx.nft.update({
+              where: { id },
+              data: { job: job as NFT_JOB, color: color as COLOR },
+            });
+          }
+        })();
       }
       return "updated";
     });

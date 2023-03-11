@@ -18,7 +18,7 @@ export class AuthService {
   login = createAsyncService<typeof endpoints.auth.login>(
     async ({ body }, { res }) => {
       const { username, password } = body;
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.user.findUnique({
         where: {
           username,
         },
@@ -53,7 +53,7 @@ export class AuthService {
       if (plainPassword !== confirmPassword)
         throw new BadRequestException("Both passwords must match");
 
-      const existingUser = await this.prisma.user.findFirst({
+      const existingUser = await this.prisma.user.findUnique({
         where: {
           username,
         },
@@ -100,7 +100,7 @@ export class AuthService {
     async (_, { req }) => {
       const user = getRefreshTokenUser(req);
       if (!user) throw new UnauthorizedException();
-      const dbUser = await this.prisma.user.findFirst({
+      const dbUser = await this.prisma.user.findUnique({
         where: { username: user.username },
       });
       if (!dbUser) throw new UnauthorizedException();
