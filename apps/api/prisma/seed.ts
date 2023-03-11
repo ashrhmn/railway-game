@@ -2,7 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { COLOR, NFT_JOB, Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "argon2";
-import { SETTINGS_KEY } from "src/enums/settings-key.enum";
+export enum SETTINGS_KEY {
+  BRIDGE_CONSTRUCTION_TIME = "BRIDGE_CONSTRUCTION_TIME",
+  RAIL_CONSTRUCTION_TIME = "RAIL_CONSTRUCTION_TIME",
+  NFT_LOCK_TIME = "NFT_LOCK_TIME",
+}
+
 const prisma = new PrismaClient();
 
 async function seedUser() {
@@ -101,6 +106,7 @@ async function seedSettings() {
 
 async function main() {
   seedUser();
+  seedSettings();
   // const game1 = await prisma.game.create({
   //   data: { name: "game1", status: "WAITING" },
   // });

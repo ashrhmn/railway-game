@@ -419,4 +419,34 @@ export const endpoints = {
       responseSchema: z.object({ id: z.number(), name: z.string() }).array(),
     },
   },
+  settings: {
+    getAll: {
+      ...defaultConfig,
+      pattern: "settings",
+      responseSchema: z
+        .object({
+          id: z.string(),
+          key: z.string(),
+          numValue: z.number().nullable(),
+          strValue: z.string().nullable(),
+          boolValue: z.boolean().nullable(),
+          title: z.string().nullable(),
+          description: z.string().nullable(),
+          valueType: z.string(),
+        })
+        .array(),
+    },
+    update: {
+      ...defaultConfig,
+      pattern: "settings/:key",
+      method: "PUT",
+      bodySchema: z.object({
+        numValue: z.coerce.number().nullable().optional(),
+        strValue: z.string().nullable().optional(),
+        boolValue: z.boolean().nullable().optional(),
+      }),
+      paramSchema: z.object({ key: z.string() }),
+      responseSchema: z.string(),
+    },
+  },
 } as const;

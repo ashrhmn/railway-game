@@ -7,6 +7,7 @@ import { GameModule } from "./modules/game/game.module";
 import { MapModule } from "./modules/map/map.module";
 import { NftModule } from "./modules/nft/nft.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
+import { SettingsModule } from "./modules/settings/settings.module";
 import { UserModule } from "./modules/user/user.module";
 
 @Module({
@@ -17,6 +18,7 @@ import { UserModule } from "./modules/user/user.module";
     NftModule,
     GameModule,
     UserModule,
+    SettingsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })
