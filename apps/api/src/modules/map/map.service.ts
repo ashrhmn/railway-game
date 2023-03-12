@@ -701,7 +701,7 @@ export class MapService {
           data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
         });
         const nfts = await tx.nft.findMany({
-          where: { gameId, color: color as COLOR },
+          where: { gameId },
           select: { id: true },
         });
         // TODO: update BLKR values
