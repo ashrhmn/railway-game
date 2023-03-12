@@ -700,6 +700,10 @@ export class MapService {
           where: { id: gameId },
           data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
         });
+        await tx.nft.updateMany({
+          data: { level: { increment: 1 } },
+          where: { gameId, color: color as COLOR },
+        });
         const nfts = await tx.nft.findMany({
           where: { gameId },
           select: { id: true },
