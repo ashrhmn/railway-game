@@ -23,7 +23,7 @@ COPY apps/client/package.json /app/apps/client/
 COPY libs/api-interface/package.json /app/libs/api-interface/
 RUN yarn install --frozen-lockfile --production
 
-RUN apk add python3
+# RUN apk add python3
 COPY apps/api/prisma/schema.prisma /app/apps/api/prisma/schema.prisma
 RUN prisma generate --schema /app/apps/api/prisma/schema.prisma
 
