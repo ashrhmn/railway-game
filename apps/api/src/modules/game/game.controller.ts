@@ -47,4 +47,13 @@ export class GameController {
       this.gameService.getAllStatus,
     );
   }
+
+  @InferMethod(endpoints.game.getCurrentRailPosition)
+  getCurrentRailPosition(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.game.getCurrentRailPosition,
+      context,
+      this.gameService.getCurrentRailPosition,
+    );
+  }
 }

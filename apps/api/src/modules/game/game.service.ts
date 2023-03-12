@@ -77,4 +77,17 @@ export class GameService {
       }));
     },
   );
+
+  getCurrentRailPosition = createAsyncService<
+    typeof endpoints.game.getCurrentRailPosition
+  >(async ({ query: { color, gameId } }) => {
+    const position = await this.prisma.railPosition.findFirst({
+      where: { color: color as COLOR, gameId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!position) throw new BadRequestException("Rail not placed yet");
+
+    return position;
+  });
 }

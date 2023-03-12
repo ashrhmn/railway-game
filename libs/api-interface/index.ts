@@ -76,6 +76,7 @@ const SkipTakeSchema = z.object({
 export const endpoints = {
   auth: {
     login: {
+      // login route
       ...defaultConfig,
       pattern: "auth/login",
       method: "POST",
@@ -333,6 +334,15 @@ export const endpoints = {
         })
         .array(),
     },
+    getCurrentRailPosition: {
+      ...defaultConfig,
+      pattern: "games/rail-position",
+      responseSchema: z.object({
+        x: z.number().min(0).max(14),
+        y: z.number().min(0).max(14),
+      }),
+      querySchema: z.object({ color: z.string(), gameId: z.string() }),
+    },
   },
   user: {
     getAllUsers: {
@@ -439,3 +449,52 @@ export const endpoints = {
     },
   },
 } as const;
+
+// --- API ---
+/*
+
+GameDev Notes
+
+1. First you will have to login to the game using username password
+2. Check on line no 78 which is login route
+3. On the route the pattern is auth/login and the method is POST
+4. So, you will have to send a POST request to https://railway.n3xchain.com/api/auth/login
+5. As the bodyschema you can see it requires a object with username and password in it. It also defines the types so, the username is string and password is string
+6. So, when you send a post request to https://railway.n3xchain.com/api/auth/login with body as {username: "your username", password: "your password"} you will get a response with a object and the object consistes of access_token and refresh_token and both are string type
+
+7. Now, you will have to use the access_token to access the other protected routes as they are not public
+
+8. When you add a headder with your request and the access_token in it, our application knows that it is you requesting to the server, so only then we provide data and otherwise not
+
+9. You will have to add a header with the key 'authorization' and value as the access_token you acquired previously
+
+10. Now, you can access the other routes as they are protected and you will get the data, but in each request you have to provide that access_token
+
+
+
+11. You can also see a route that is used to get all the games from game.getAll
+12. The pattern is games and the method is GET (by default if it is not specified)
+
+13. So, you will have to send a GET request to https://railway.n3xchain.com/api/games
+
+14. As the responseSchema here says, you will get back an array of object containing id,name,status and more.
+
+So, this is how all the api routes work, you can see the other routes and their usage in the code above
+
+So, for the game workflow, at first the user will come to the game app and connect their wallet. From that, you get the wallet address of the user. On line 112, you can see a getAllNfts route. You can hit this api following the pattern and get an array of NFTs. on the query schema you can see there is a owner option. So, you can use something like this, https://railway.n3xchain.com/api/nfts?owner=0x1234567890abcdef1234567890abcdef12345678 and you will get all the NFTs owned by that address. So, the part after ? is just filtering out items. But this will return nfts from all games, but in that case you might want to pass a gameId alongside and hit the url like this, https://railway.n3xchain.com/api/nfts?owner=0x1234567890abcdef1234567890abcdef12345678&gameId=abcdefg and you will get all the NFTs owned by that address in that game.
+
+Initially you do not have the game id, but you can hit the game.getAll route from the aboev object and in return you get all the games with its ids alongside the game status. Usually when the user connects, they will connect to the currently running game, so you can check the status RUNNING from the array of game list and the provide the id of a running game to the above url and get all the NFTs owned by that address in that game.
+
+So, you can list all the nfts owned by that user for them so they can place them on the map.
+
+But the map, to get the map information use the map.getPositions route and pass the game id and color(all game has 10 color maps, you can get all possible colors using the map.getColors route) as query param. So, the url will be like this, https://railway.n3xchain.com/api/map/positions?gameId=abcdefg&color=RED and you will get all the positions of the nfts in that game.
+
+on the resoonse you will get an array of objects and the object will contain the mapItem (RIVER,MOUNTAIN,CHECKPOINT, also you can possible mapItem values using the map.getMapItems route). As you can see the mapItem property is nullable, so in a possition there could be a map item or not. If there is one you will render it on the game screen. Similarly prePlaced are the pre existing rail roads on a map you can render them as the data response comes back. nft is the property nft that is already placed on that position. bridgeConstructedOn is number type and it is a timestamp in seconds. In javascript you can get current timestamp using Math.round(Date.now()/1000). You can compare the bridgeConstructedOn value with current timestamp. If the value less that current timestamp that means a bridge construction is completed on that position. If the value is greater than current timestamps that means the bridge is still under construction and the construction will be completed at that timestamp. Using the timestamp you can show a timer until that timestamp on the map that shows after this time the bridge will be constructed. Same thing applies for railConstructedOn. Wehn a user assigns an nft on the map, that rail has to complete constructions and this will show you the timestamp of last completion or the time in future if the construction is not completed yet. enemy is also a nullable value here, so a position might or might not have an enemy.
+
+So, this way you can get the map informations from the server.
+
+When a user wants to place an nft on the map, you can user the map.placeNft route and pass the game id, color, x, y, nftId etc(check the bodySchema).  You will get a response with a message that the nft is placed on the map. if anything wrong happens we are throwing error http status. So, you can check the status code and show the error message to the user. if the status code is 200 or 201 that means the nft is placed on the map successfully. Anything other than 200 and 201 means something went wrong and our response will contain information about what went wrong.
+
+
+We also have another route that is map.updateRailLocation. By the rules, rail will automatically travel to the next available rail tracks if the constructions is completed. There are some other rules too regarding the collision with mountain and all. You can check the requirement doc for that. So, you will have to find out the next location of the rail according to the rule every 10minutes. Every 10minutes you will be sending a post request to the map.updateRailLocation  and pass the required information on it (defined in the endpoint above). If you get a ok response that means placement was successful and thus the rail can move forward. So, every 10minutes you will be sending information regarding the new location and if the response is that means everything is good to go.
+*/
