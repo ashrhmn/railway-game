@@ -85,17 +85,6 @@ export const endpoints = {
         refresh_token: z.string(),
       }),
     },
-    signup: {
-      ...defaultConfig,
-      pattern: "auth/signup",
-      method: "POST",
-      bodySchema: z.object({
-        username: z.string(),
-        password: z.string(),
-        confirmPassword: z.string(),
-      }),
-      responseSchema: z.string(),
-    },
     currentUser: {
       ...defaultConfig,
       pattern: "auth/current-user",

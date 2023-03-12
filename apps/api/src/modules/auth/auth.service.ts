@@ -47,40 +47,40 @@ export class AuthService {
     },
   );
 
-  signup = createAsyncService<typeof endpoints.auth.signup>(
-    async ({ body }, { res }) => {
-      const { username, password: plainPassword, confirmPassword } = body;
-      if (plainPassword !== confirmPassword)
-        throw new BadRequestException("Both passwords must match");
+  // signup = createAsyncService<typeof endpoints.auth.signup>(
+  //   async ({ body }, { res }) => {
+  //     const { username, password: plainPassword, confirmPassword } = body;
+  //     if (plainPassword !== confirmPassword)
+  //       throw new BadRequestException("Both passwords must match");
 
-      const existingUser = await this.prisma.user.findUnique({
-        where: {
-          username,
-        },
-      });
+  //     const existingUser = await this.prisma.user.findUnique({
+  //       where: {
+  //         username,
+  //       },
+  //     });
 
-      if (!!existingUser)
-        throw new BadRequestException("Username already in use");
+  //     if (!!existingUser)
+  //       throw new BadRequestException("Username already in use");
 
-      const password = await hash(plainPassword);
+  //     const password = await hash(plainPassword);
 
-      const user = await this.prisma.user.create({
-        data: { username, password, roles: ["USER"] },
-      });
-      const { access_token, refresh_token } = generateTokens(user);
-      res.cookie("authorization", access_token, {
-        httpOnly: true,
-        expires: new Date(Date.now() + CONFIG.JWT.TIMEOUT.ACCESS * 1000),
-        secure: CONFIG.NODE_ENV === "production",
-      });
-      res.cookie("refresh_token", refresh_token, {
-        httpOnly: true,
-        secure: CONFIG.NODE_ENV === "production",
-      });
+  //     const user = await this.prisma.user.create({
+  //       data: { username, password, roles: ["USER"] },
+  //     });
+  //     const { access_token, refresh_token } = generateTokens(user);
+  //     res.cookie("authorization", access_token, {
+  //       httpOnly: true,
+  //       expires: new Date(Date.now() + CONFIG.JWT.TIMEOUT.ACCESS * 1000),
+  //       secure: CONFIG.NODE_ENV === "production",
+  //     });
+  //     res.cookie("refresh_token", refresh_token, {
+  //       httpOnly: true,
+  //       secure: CONFIG.NODE_ENV === "production",
+  //     });
 
-      return "success";
-    },
-  );
+  //     return "success";
+  //   },
+  // );
 
   currentUser = createAsyncService<typeof endpoints.auth.currentUser>(
     async (_, { user }) => {
