@@ -33,6 +33,7 @@ COPY --from=builder /app/apps/api/dist/prisma /app/apps/api/prisma
 COPY --from=builder /app/apps/client/.next/standalone/apps/client/. /app/apps/client/.
 COPY --from=builder /app/apps/client/.next/static/. /app/apps/client/.next/static/.
 COPY --from=builder /app/apps/client/public/. /app/apps/client/public/.
+COPY libs/api-interface/index.ts /app/apps/client/public/api-interface.ts
 
 EXPOSE 3000
 
