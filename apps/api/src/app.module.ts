@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
+import { ScheduleModule } from "@nestjs/schedule";
 import { RolesGuard } from "./guards/roles.guard";
 import { AuthMiddleware } from "./middlewares/auth.middleware";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -19,6 +20,7 @@ import { UserModule } from "./modules/user/user.module";
     GameModule,
     UserModule,
     SettingsModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })

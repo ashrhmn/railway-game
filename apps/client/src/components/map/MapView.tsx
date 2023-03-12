@@ -62,6 +62,14 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       .catch(handleReqError);
   };
 
+  const { data: currentRailPosition } = useQuery({
+    queryKey: ["rail-current-position", color, gameId],
+    queryFn: () =>
+      service(endpoints.game.getCurrentRailPosition)({
+        query: { color, gameId },
+      }),
+  });
+
   const { data, status, refetch, error } = useQuery({
     queryKey: ["map-positions", color, gameId],
     queryFn: () =>
@@ -163,6 +171,8 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       .catch(handleReqError);
   };
 
+  console.log({ currentRailPosition });
+
   return (
     <div className="mt-8 flex flex-wrap gap-3 p-1">
       <div className="select-none">
@@ -186,8 +196,16 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                     onClick={() => setSelectedPoint({ x: p.x, y: p.y })}
                     key={p.x + "" + p.y}
                   >
-                    {roles.includes("GAMEDEV") && !p.isRevealed
+                    {!!currentRailPosition &&
+                    currentRailPosition.x === p.x &&
+                    currentRailPosition.y === p.y
+                      ? "🚂"
+                      : roles.includes("GAMEDEV") && !p.isRevealed
                       ? null
+                      : p.mapItem === "MOUNTAIN"
+                      ? "🏔️"
+                      : p.mapItem === "RIVER"
+                      ? "🌊"
                       : `${p.x},${p.y}`}
                   </div>
                 ))}

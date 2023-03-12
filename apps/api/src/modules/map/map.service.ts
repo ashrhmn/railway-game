@@ -4,7 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { COLOR, GAME_STATUS, MAP_ITEMS, NFT_JOB } from "@prisma/client";
+import {
+  COLOR,
+  GAME_STATUS,
+  MAP_ITEMS,
+  NFT_JOB,
+  RAIL_DIRECTION,
+} from "@prisma/client";
 import { endpoints } from "api-interface";
 import { createAsyncService, createService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
@@ -14,6 +20,7 @@ import { Position } from "src/classes/Position";
 import { timestamp } from "src/utils/date.utils";
 import { SETTINGS_KEY } from "src/enums/settings-key.enum";
 import { getRandomNumber } from "src/utils/number.utils";
+import { Cron, CronExpression } from "@nestjs/schedule";
 
 @Injectable()
 export class MapService {
@@ -437,8 +444,9 @@ export class MapService {
           )
             throw new BadRequestException(`Bridge Construction Time not set`);
 
-          const bridgeConstructionTime =
-            bridgeConstructionBaseTime.numValue - (100 - nft.abilityB) / 100;
+          const bridgeConstructionTime = Math.round(
+            bridgeConstructionBaseTime.numValue - (100 - nft.abilityB) / 100,
+          );
 
           const bridgeConstructedOn = timestamp() + bridgeConstructionTime;
 
@@ -504,6 +512,21 @@ export class MapService {
             .filter((v) => v.startsWith("RAIL_"))
             .includes(nft.job)
         ) {
+          const currentRailPosition = await tx.railPosition.findFirst({
+            where: { color: color, gameId: gameId },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (!currentRailPosition)
+            throw new BadRequestException(
+              "Current position for rail not found",
+            );
+
+          if (currentRailPosition.x === x && currentRailPosition.y === y)
+            throw new BadRequestException(
+              `Rail NFT can not be placed on the same position as current rail position`,
+            );
+
           const railRoadConstructionBaseTime = await tx.settings.findUnique({
             where: { key: SETTINGS_KEY.RAIL_CONSTRUCTION_TIME },
             select: { numValue: true },
@@ -517,9 +540,10 @@ export class MapService {
               `Rail Road Construction Time not set`,
             );
 
-          const railRoadConstructionTime =
+          const railRoadConstructionTime = Math.round(
             railRoadConstructionBaseTime.numValue *
-            ((100 - nft.abilityR) / 100);
+              ((100 - nft.abilityR) / 100),
+          );
 
           const railConstructedOn = timestamp() + railRoadConstructionTime;
 
@@ -561,98 +585,428 @@ export class MapService {
     },
   );
 
-  updateRailLocation = createAsyncService<
-    typeof endpoints.map.updateRailLocation
-  >(async ({ body: { color, gameId, x, y } }) => {
-    return await this.prisma.$transaction(async (tx) => {
-      const game = await tx.game.findUnique({
-        where: { id: gameId },
-        select: { status: true, contractAddress: true },
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async checkAndMoveRail() {
+    console.log("checkAndMoveRail");
+    const runningGames = await this.prisma.game.findMany({
+      where: { status: "RUNNING" },
+    });
+    runningGames.forEach((game) =>
+      Object.keys(COLOR).forEach((color) =>
+        this.checkAndMoveRailByGameIdAndColor(game.id, color as COLOR),
+      ),
+    );
+  }
+
+  async checkAndMoveRailByGameIdAndColor(gameId: string, color: COLOR) {
+    if (color !== "RED") return;
+    const currentRailPosition = await this.prisma.railPosition.findFirst({
+      where: { gameId, color },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!currentRailPosition) {
+      console.warn(
+        `Current Rail Position not found for game: ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      return;
+    }
+
+    if (
+      Math.round(currentRailPosition.createdAt.valueOf() / 1000) >
+      timestamp() - 60
+    ) {
+      console.info(
+        `Rail is not ready to move yet for game: ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      return;
+    }
+
+    const currentPosition = new Position(
+      currentRailPosition.x,
+      currentRailPosition.y,
+    );
+
+    const direction = currentRailPosition.direction;
+
+    const nextPosition =
+      direction === "DOWN"
+        ? currentPosition.down()
+        : direction === "UP"
+        ? currentPosition.up()
+        : direction === "LEFT"
+        ? currentPosition.left()
+        : direction === "RIGHT"
+        ? currentPosition.right()
+        : null;
+
+    const oppositeDirection =
+      direction === "DOWN"
+        ? RAIL_DIRECTION.UP
+        : direction === "UP"
+        ? RAIL_DIRECTION.DOWN
+        : direction === "LEFT"
+        ? RAIL_DIRECTION.RIGHT
+        : direction === "RIGHT"
+        ? RAIL_DIRECTION.LEFT
+        : null;
+
+    if (!nextPosition || !oppositeDirection) {
+      console.warn(
+        `Invalid Rail Direction: ${JSON.stringify({ gameId, color }, null, 2)}`,
+      );
+      return;
+    }
+
+    const { x, y } = nextPosition.getPosition();
+    if (x < 0 || y < 0 || x > 14 || y > 14) {
+      console.log(
+        `Colided with outer box, turning 180 degree ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      await this.prisma.railPosition.create({
+        data: {
+          color,
+          gameId,
+          direction: oppositeDirection,
+          x: currentRailPosition.x,
+          y: currentRailPosition.y,
+        },
       });
-      if (!game)
-        throw new NotFoundException(`Game with id ${gameId} not found`);
-      if (game.status !== GAME_STATUS.RUNNING)
-        throw new BadRequestException(`Game is not running`);
+      return;
+    }
 
-      const mapPosition = await tx.mapPosition.findUnique({
-        where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
-        include: { enemy: true },
+    const nextMapPosition = await this.prisma.mapPosition.findUnique({
+      where: { x_y_gameId_color: { x, y, gameId, color } },
+      include: { enemy: true, game: true, nft: true },
+    });
+
+    if (!nextMapPosition) {
+      console.warn(
+        `Next Rail Position ${{
+          x,
+          y,
+        }} not found for game: ${gameId}, color: ${color}`,
+      );
+      return;
+    }
+
+    if (nextMapPosition.mapItem === "MOUNTAIN") {
+      console.log(
+        `Colided with mountain, turning 180 degree ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      await this.prisma.railPosition.create({
+        data: {
+          color,
+          gameId,
+          direction: oppositeDirection,
+          x: currentRailPosition.x,
+          y: currentRailPosition.y,
+        },
       });
+      return;
+    }
 
-      if (!mapPosition)
-        throw new NotFoundException(`Map Position not revealed yet`);
-
-      if (!mapPosition.isRevealed)
-        throw new BadRequestException(`Map Position not revealed yet`);
-
-      if (mapPosition.mapItem === "MOUNTAIN")
-        throw new BadRequestException(`Can not travel on a maountain`);
-
-      if (
-        mapPosition.mapItem === "RIVER" &&
-        mapPosition.bridgeConstructedOn > timestamp()
-      )
-        throw new BadRequestException(
-          `Can not travel on a river with no bridge constructed on it`,
-        );
-
-      if (!!mapPosition.enemy && mapPosition.enemy.currentStrength > 0)
-        throw new BadRequestException(`Can not travel on an undefeated enemy`);
-
-      const currentRailPosition = await tx.railPosition.findFirst({
-        where: { color: color as COLOR, gameId },
-        orderBy: { createdAt: "desc" },
+    if (
+      nextMapPosition.mapItem === "RIVER" &&
+      (nextMapPosition.bridgeConstructedOn > timestamp() ||
+        nextMapPosition.bridgeConstructedOn === 0)
+    ) {
+      console.log(
+        `Colided with river with no bridge constructed, turning 180 degree ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      await this.prisma.railPosition.create({
+        data: {
+          color,
+          gameId,
+          direction: oppositeDirection,
+          x: currentRailPosition.x,
+          y: currentRailPosition.y,
+        },
       });
+      return;
+    }
 
-      if (!currentRailPosition)
-        throw new BadRequestException(`No Rail NFT placed`);
-
-      if (
-        Math.round(currentRailPosition.createdAt.valueOf() / 1000) >
-        timestamp() - 10 * 60 // 10 minutes
-      )
-        throw new BadRequestException(
-          `Can not move rail before 10 minutes of last movement`,
-        );
-
-      if (
-        Math.abs(currentRailPosition.x - x) > 1 ||
-        Math.abs(currentRailPosition.y - y) > 1
-      )
-        throw new BadRequestException(
-          `Can not travel more than 1 square at a time`,
-        );
-
-      // if (!!mapPosition.mapItem && mapPosition.mapItem !== MAP_ITEMS.CHECKPOINT)
-      //   throw new BadRequestException(
-      //     `Map Position already occupied by ${mapPosition.mapItem}`,
-      //   );
-
-      // if (!!mapPosition.enemyId)
-      //   throw new BadRequestException(`Map Position already occupied by enemy`);
-
-      // if (!mapPosition.nftId)
-      //   throw new BadRequestException(
-      //     `No Rail NFT placed on the specified position`,
-      //   );
-
-      await tx.railPosition.create({
-        data: { x, y, color: color as COLOR, gameId },
+    if (!!nextMapPosition.enemy && nextMapPosition.enemy.currentStrength > 0) {
+      console.log(
+        `Colided with undefeated enemy, turning 180 degree ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      await this.prisma.railPosition.create({
+        data: {
+          color,
+          gameId,
+          direction: oppositeDirection,
+          x: currentRailPosition.x,
+          y: currentRailPosition.y,
+        },
       });
+      return;
+    }
 
-      if (mapPosition.mapItem === MAP_ITEMS.CHECKPOINT)
-        await tx.mapPosition.upsert({
-          where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
-          update: { checkPointPassed: true },
-          create: {
-            color: color as COLOR,
-            x,
-            y,
+    if (!nextMapPosition.nft) {
+      console.log(
+        `No nft placed forward, rail stays on the same position ${JSON.stringify(
+          { gameId, color },
+          null,
+          2,
+        )}`,
+      );
+      return;
+    }
+
+    if (
+      nextMapPosition.railConstructedOn > timestamp() ||
+      nextMapPosition.railConstructedOn === 0
+    ) {
+      console.log(
+        `No rail constructed forward, rail stays on the same position ${JSON.stringify(
+          {
             gameId,
-            checkPointPassed: true,
+            color,
+            constructionCompletesOn: new Date(
+              nextMapPosition.railConstructedOn * 1000,
+            ),
           },
-        });
+          null,
+          2,
+        )}`,
+      );
+      return;
+    }
 
+    if (direction === "LEFT") {
+      if (
+        nextMapPosition.nft.job === "RAIL_4_6" ||
+        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+      ) {
+        console.log(`Going left ${JSON.stringify({ gameId, color }, null, 2)}`);
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.LEFT, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "LEFT");
+      }
+      if (nextMapPosition.nft.job === "RAIL_2_6") {
+        console.log(
+          `Going left,turning down ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "DOWN");
+      }
+      if (nextMapPosition.nft.job === "RAIL_6_8") {
+        console.log(
+          `Going left, turning up ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "UP");
+      }
+      console.log(
+        "Attempt left, but nft job mismatch",
+        nextMapPosition.nft.job,
+        " on ",
+        x,
+        y,
+        gameId,
+        color,
+      );
+      return;
+    }
+
+    if (direction === "RIGHT") {
+      if (
+        nextMapPosition.nft.job === "RAIL_4_6" ||
+        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+      ) {
+        console.log(
+          `Going right ${JSON.stringify({ gameId, color }, null, 2)}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.RIGHT, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "RIGHT");
+      }
+      if (nextMapPosition.nft.job === "RAIL_2_4") {
+        console.log(
+          `Going right, turning down ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "DOWN");
+      }
+      if (nextMapPosition.nft.job === "RAIL_4_8") {
+        console.log(
+          `Going right, turning up ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "UP");
+      }
+      console.log(
+        "Attempt right, but nft job mismatch",
+        nextMapPosition.nft.job,
+        " on ",
+        x,
+        y,
+        gameId,
+        color,
+      );
+      return;
+    }
+
+    if (direction === "UP") {
+      if (
+        nextMapPosition.nft.job === "RAIL_2_8" ||
+        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+      ) {
+        console.log(`Going up ${JSON.stringify({ gameId, color }, null, 2)}`);
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "UP");
+      }
+      if (nextMapPosition.nft.job === "RAIL_2_6") {
+        console.log(
+          `Going up, turning right ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.RIGHT, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "RIGHT");
+      }
+      if (nextMapPosition.nft.job === "RAIL_2_4") {
+        console.log(
+          `Going up, turning left ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.LEFT, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "LEFT");
+      }
+      console.log(
+        "Attempt up, but nft job mismatch",
+        nextMapPosition.nft.job,
+        " on ",
+        x,
+        y,
+        gameId,
+        color,
+      );
+      return;
+    }
+
+    if (direction === "DOWN") {
+      if (
+        nextMapPosition.nft.job === "RAIL_2_8" ||
+        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+      ) {
+        console.log(`Going down ${JSON.stringify({ gameId, color }, null, 2)}`);
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "DOWN");
+      }
+      if (nextMapPosition.nft.job === "RAIL_6_8") {
+        console.log(
+          `Going down, turning right ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.RIGHT, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "RIGHT");
+      }
+      if (nextMapPosition.nft.job === "RAIL_4_8") {
+        console.log(
+          `Going down, turning left ${JSON.stringify(
+            { gameId, color },
+            null,
+            2,
+          )}`,
+        );
+        // await this.prisma.railPosition.create({
+        //   data: { color, gameId, direction: RAIL_DIRECTION.LEFT, x, y },
+        // });
+        return await this.onPositionChange(color, gameId, x, y, "LEFT");
+      }
+      console.log(
+        "Attempt down, but nft job mismatch",
+        nextMapPosition.nft.job,
+        " on ",
+        x,
+        y,
+        gameId,
+        color,
+      );
+      return;
+    }
+  }
+
+  async onPositionChange(
+    color: COLOR,
+    gameId: string,
+    x: number,
+    y: number,
+    direction: RAIL_DIRECTION,
+  ) {
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.railPosition.create({
+        data: { color, gameId, direction, x, y },
+      });
       const root = new Position(x, y);
 
       const positionsToReveal = [
@@ -695,7 +1049,7 @@ export class MapService {
           update: { x, y, color: color as COLOR, gameId, isRevealed: true },
         });
       }
-      if (x === 14 && y === 14) {
+      if (x === 0 && y === 0) {
         await tx.game.update({
           where: { id: gameId },
           data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
@@ -727,7 +1081,176 @@ export class MapService {
           }
         })();
       }
-      return "updated";
     });
-  });
+  }
+
+  // updateRailLocation = createAsyncService<
+  //   typeof endpoints.map.updateRailLocation
+  // >(async ({ body: { color, gameId, x, y } }) => {
+  //   return await this.prisma.$transaction(async (tx) => {
+  //     const game = await tx.game.findUnique({
+  //       where: { id: gameId },
+  //       select: { status: true, contractAddress: true },
+  //     });
+  //     if (!game)
+  //       throw new NotFoundException(`Game with id ${gameId} not found`);
+  //     if (game.status !== GAME_STATUS.RUNNING)
+  //       throw new BadRequestException(`Game is not running`);
+
+  //     const mapPosition = await tx.mapPosition.findUnique({
+  //       where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
+  //       include: { enemy: true },
+  //     });
+
+  //     if (!mapPosition)
+  //       throw new NotFoundException(`Map Position not revealed yet`);
+
+  //     if (!mapPosition.isRevealed)
+  //       throw new BadRequestException(`Map Position not revealed yet`);
+
+  //     if (mapPosition.mapItem === "MOUNTAIN")
+  //       throw new BadRequestException(`Can not travel on a maountain`);
+
+  //     if (
+  //       mapPosition.mapItem === "RIVER" &&
+  //       mapPosition.bridgeConstructedOn > timestamp()
+  //     )
+  //       throw new BadRequestException(
+  //         `Can not travel on a river with no bridge constructed on it`,
+  //       );
+
+  //     if (!!mapPosition.enemy && mapPosition.enemy.currentStrength > 0)
+  //       throw new BadRequestException(`Can not travel on an undefeated enemy`);
+
+  //     const currentRailPosition = await tx.railPosition.findFirst({
+  //       where: { color: color as COLOR, gameId },
+  //       orderBy: { createdAt: "desc" },
+  //     });
+
+  //     if (!currentRailPosition)
+  //       throw new BadRequestException(`No Rail NFT placed`);
+
+  //     if (
+  //       Math.round(currentRailPosition.createdAt.valueOf() / 1000) >
+  //       timestamp() - 10 * 60 // 10 minutes
+  //     )
+  //       throw new BadRequestException(
+  //         `Can not move rail before 10 minutes of last movement`,
+  //       );
+
+  //     if (
+  //       Math.abs(currentRailPosition.x - x) > 1 ||
+  //       Math.abs(currentRailPosition.y - y) > 1
+  //     )
+  //       throw new BadRequestException(
+  //         `Can not travel more than 1 square at a time`,
+  //       );
+
+  //     // if (!!mapPosition.mapItem && mapPosition.mapItem !== MAP_ITEMS.CHECKPOINT)
+  //     //   throw new BadRequestException(
+  //     //     `Map Position already occupied by ${mapPosition.mapItem}`,
+  //     //   );
+
+  //     // if (!!mapPosition.enemyId)
+  //     //   throw new BadRequestException(`Map Position already occupied by enemy`);
+
+  //     // if (!mapPosition.nftId)
+  //     //   throw new BadRequestException(
+  //     //     `No Rail NFT placed on the specified position`,
+  //     //   );
+
+  //     await tx.railPosition.create({
+  //       data: { x, y, color: color as COLOR, gameId, direction: "LEFT" },
+  //     });
+
+  //     if (mapPosition.mapItem === MAP_ITEMS.CHECKPOINT)
+  //       await tx.mapPosition.upsert({
+  //         where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
+  //         update: { checkPointPassed: true },
+  //         create: {
+  //           color: color as COLOR,
+  //           x,
+  //           y,
+  //           gameId,
+  //           checkPointPassed: true,
+  //         },
+  //       });
+
+  //     const root = new Position(x, y);
+
+  //     const positionsToReveal = [
+  //       root,
+  //       //  adjacents
+  //       root.left(),
+  //       root.right(),
+  //       root.up(),
+  //       root.down(),
+  //       root.up().left(),
+  //       root.up().right(),
+  //       root.down().left(),
+  //       root.down().right(),
+  //       //  2 square away left
+  //       root.left().left(),
+  //       root.left().left().up(),
+  //       root.left().left().down(),
+  //       //  2 square away up
+  //       root.up().up(),
+  //       root.up().up().left(),
+  //       root.up().up().right(),
+  //       //  2 square away right
+  //       root.right().right(),
+  //       root.right().right().up(),
+  //       root.right().right().down(),
+  //       //  2 square away down
+  //       root.down().down(),
+  //       root.down().down().left(),
+  //       root.down().down().right(),
+  //     ]
+  //       .map((pos) => pos.getPosition())
+  //       .filter(
+  //         (pos) => pos.x >= 0 && pos.y >= 0 && pos.x <= 14 && pos.y <= 14,
+  //       );
+
+  //     for (const { x, y } of positionsToReveal) {
+  //       await tx.mapPosition.upsert({
+  //         where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
+  //         create: { x, y, color: color as COLOR, gameId, isRevealed: true },
+  //         update: { x, y, color: color as COLOR, gameId, isRevealed: true },
+  //       });
+  //     }
+  //     if (x === 14 && y === 14) {
+  //       await tx.game.update({
+  //         where: { id: gameId },
+  //         data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
+  //       });
+  //       await tx.nft.updateMany({
+  //         data: { level: { increment: 1 } },
+  //         where: { gameId, color: color as COLOR },
+  //       });
+  //       const nfts = await tx.nft.findMany({
+  //         where: { gameId },
+  //         select: { id: true },
+  //       });
+  //       // TODO: update BLKR values
+  //       (async () => {
+  //         for (const { id } of nfts) {
+  //           const job =
+  //             Object.keys(NFT_JOB)[
+  //               getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
+  //             ];
+  //           const color =
+  //             Object.keys(COLOR)[
+  //               getRandomNumber(0, Object.keys(COLOR).length - 1)
+  //             ];
+  //           if (!job || !color) throw new Error("Invalid random job or color");
+  //           await tx.nft.update({
+  //             where: { id },
+  //             data: { job: job as NFT_JOB, color: color as COLOR },
+  //           });
+  //         }
+  //       })();
+  //     }
+  //     return "updated";
+  //   });
+  // });
 }

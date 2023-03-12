@@ -26,6 +26,7 @@ export class GameService {
           data: Object.keys(COLOR).map((color) => ({
             color: color as COLOR,
             gameId: game.id,
+            direction: "LEFT",
           })),
           skipDuplicates: true,
         });

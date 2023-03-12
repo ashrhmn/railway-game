@@ -50,23 +50,25 @@ const ValidAddressSchema = <S>(schema: ZodType<S>) =>
     }
   });
 
-const NFTResponseSchema = z.object({
-  id: z.string(),
-  tokenId: z.number(),
-  name: z.string(),
-  description: z.string(),
-  image: z.string(),
-  frozenTill: z.number(),
-  owner: z.string().nullable(),
-  color: z.string(),
-  level: z.number(),
-  abilityB: z.number(),
-  abilityL: z.number(),
-  abilityR: z.number(),
-  abilityK: z.number(),
-  job: z.string(),
-  metadata: z.array(z.any()),
-});
+const NFTResponseSchema = z
+  .object({
+    id: z.string(),
+    tokenId: z.number(),
+    name: z.string(),
+    description: z.string(),
+    image: z.string(),
+    frozenTill: z.number(),
+    owner: z.string().nullable(),
+    color: z.string(),
+    level: z.number(),
+    abilityB: z.number(),
+    abilityL: z.number(),
+    abilityR: z.number(),
+    abilityK: z.number(),
+    job: z.string(),
+    metadata: z.array(z.any()),
+  })
+  .passthrough();
 
 const SkipTakeSchema = z.object({
   skip: z.coerce.number().optional().default(0),
@@ -194,6 +196,7 @@ export const endpoints = {
             })
             .nullable(),
         })
+        .passthrough()
         .array(),
       querySchema: z
         .object({
@@ -293,6 +296,7 @@ export const endpoints = {
           chainId: z.number().nullable(),
           status: z.string(),
         })
+        .passthrough()
         .array(),
       querySchema: SkipTakeSchema,
     },
@@ -337,10 +341,12 @@ export const endpoints = {
     getCurrentRailPosition: {
       ...defaultConfig,
       pattern: "games/rail-position",
-      responseSchema: z.object({
-        x: z.number().min(0).max(14),
-        y: z.number().min(0).max(14),
-      }),
+      responseSchema: z
+        .object({
+          x: z.number().min(0).max(14),
+          y: z.number().min(0).max(14),
+        })
+        .passthrough(),
       querySchema: z.object({ color: z.string(), gameId: z.string() }),
     },
   },

@@ -99,13 +99,13 @@ export class MapController {
     );
   }
 
-  @Roles("GAMEDEV")
-  @InferMethod(endpoints.map.updateRailLocation)
-  updateRailLocation(@Context() context: IContext) {
-    return createAsyncController(
-      endpoints.map.updateRailLocation,
-      context,
-      this.mapService.updateRailLocation,
-    );
-  }
+  // @Roles("GAMEDEV")
+  // @InferMethod(endpoints.map.updateRailLocation)
+  // updateRailLocation(@Context() context: IContext) {
+  //   return createAsyncController(
+  //     endpoints.map.updateRailLocation,
+  //     context,
+  //     this.mapService.updateRailLocation,
+  //   );
+  // }
 }
