@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  HttpException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -21,10 +20,14 @@ import { timestamp } from "src/utils/date.utils";
 import { SETTINGS_KEY } from "src/enums/settings-key.enum";
 import { getRandomNumber } from "src/utils/number.utils";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { SocketService } from "../socket/socket.service";
 
 @Injectable()
 export class MapService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socketService: SocketService,
+  ) {}
   getColors = createService<typeof endpoints.map.getColors>(() => {
     return Object.keys(COLOR);
   });
@@ -37,12 +40,13 @@ export class MapService {
 
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
     async ({ query: { skip, take, color, gameId } }, { user }) => {
-      if (!user) throw new HttpException("Unauthorized", 401);
       const data = await this.prisma.mapPosition.findMany({
         where: {
           gameId,
           color: COLOR[color],
-          ...(user.roles.includes("GAMEDEV") ? { isRevealed: true } : {}),
+          ...(!!user && user.roles.includes("ADMIN")
+            ? {}
+            : { isRevealed: true }),
         },
         include: {
           nft: true,
@@ -903,6 +907,11 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going up ${JSON.stringify({ gameId, color }, null, 2)}`);
+        this.socketService.socket?.emit("MESSAGE", {
+          message: "Going up",
+          gameId,
+          color,
+        });
         // await this.prisma.railPosition.create({
         //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
         // });
@@ -952,6 +961,11 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going down ${JSON.stringify({ gameId, color }, null, 2)}`);
+        this.socketService.socket?.emit("MESSAGE", {
+          message: "Going down",
+          gameId,
+          color,
+        });
         // await this.prisma.railPosition.create({
         //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
         // });

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -64,5 +65,12 @@ export class NftController {
     @Body() body: { replace: string; game_id: string },
   ) {
     return this.nftService.addCsvNfts(file, body);
+  }
+
+  @Roles("ADMIN")
+  @Post("nfts/update-owners/:gameId")
+  updateNftOwnersByGameId(@Param("gameId") gameId: string) {
+    this.nftService.updateNftOwnersByGameId(gameId);
+    return "queued";
   }
 }

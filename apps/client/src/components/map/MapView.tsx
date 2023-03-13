@@ -252,7 +252,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   <h1>{selectedPointDetails?.prePlaced || "None"}</h1>
                   <h1>
                     {!!selectedPointDetails?.enemy
-                      ? `${selectedPointDetails.enemy.name} (Strength : ${selectedPointDetails.enemy.strength})`
+                      ? `${selectedPointDetails.enemy.name} (Strength : ${selectedPointDetails.enemy.currentStrength}/${selectedPointDetails.enemy.strength})`
                       : "None"}
                   </h1>
                 </div>

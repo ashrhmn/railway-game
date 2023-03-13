@@ -192,6 +192,7 @@ export const endpoints = {
               id: z.string(),
               name: z.string(),
               strength: z.number(),
+              currentStrength: z.number(),
               _count: z.object({ positions: z.number() }),
             })
             .nullable(),

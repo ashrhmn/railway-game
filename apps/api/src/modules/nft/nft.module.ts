@@ -5,5 +5,6 @@ import { NftService } from "./nft.service";
 @Module({
   controllers: [NftController],
   providers: [NftService],
+  exports: [NftService],
 })
-export class NftModule { }
+export class NftModule {}

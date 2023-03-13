@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
+import { AppService } from "./app.service";
 import { RolesGuard } from "./guards/roles.guard";
 import { AuthMiddleware } from "./middlewares/auth.middleware";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -9,6 +10,7 @@ import { MapModule } from "./modules/map/map.module";
 import { NftModule } from "./modules/nft/nft.module";
 import { PrismaModule } from "./modules/prisma/prisma.module";
 import { SettingsModule } from "./modules/settings/settings.module";
+import { SocketModule } from "./modules/socket/socket.module";
 import { UserModule } from "./modules/user/user.module";
 
 @Module({
@@ -21,8 +23,9 @@ import { UserModule } from "./modules/user/user.module";
     UserModule,
     SettingsModule,
     ScheduleModule.forRoot(),
+    SocketModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
+  providers: [{ provide: APP_GUARD, useClass: RolesGuard }, AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

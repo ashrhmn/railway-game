@@ -10,6 +10,7 @@ import { handleReqError } from "@/utils/error.utils";
 import { promiseToast } from "@/utils/toast.utils";
 import { useQuery } from "@tanstack/react-query";
 import { endpoints } from "api-interface";
+import axios from "axios";
 import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import React, { useCallback, useState } from "react";
@@ -81,7 +82,24 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
       service(endpoints.nft.randomizeFixTokenId)({
         body: { gameId: selectedGameId },
       }).then(() => refetch()),
-      { loading: "Randomizing...", success: "Done" }
+      {
+        loading: "Randomizing...",
+        success: "Done. Owners will be refreshed automatically",
+      }
+    ).catch(handleReqError);
+  };
+
+  const handleRefreshOwners = () => {
+    if (!selectedGameId) return;
+    promiseToast(
+      axios
+        .post(
+          `/api/nfts/update-owners/${selectedGameId}`,
+          {},
+          { withCredentials: true }
+        )
+        .then(() => refetch()),
+      { loading: "Refreshing...", success: "Done" }
     ).catch(handleReqError);
   };
 
@@ -122,6 +140,9 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
         </label>
         <button onClick={handleRandomizeTokenId} className="btn">
           Randomize Token ID
+        </button>
+        <button onClick={handleRefreshOwners} className="btn">
+          Refresh Owners
         </button>
         <input type="checkbox" id="delete-modal" className="modal-toggle" />
         <label htmlFor="delete-modal" className="modal cursor-pointer">

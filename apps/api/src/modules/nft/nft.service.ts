@@ -7,6 +7,9 @@ import * as csvParser from "csv-parser";
 import { once } from "events";
 import { Readable } from "stream";
 import { z } from "zod";
+import { ethers } from "ethers";
+import { CONFIG } from "src/config/app.config";
+import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class NftService {
@@ -115,7 +118,7 @@ export class NftService {
       .array()
       .parse(results);
 
-    return await this.prisma.$transaction(async (tx) => {
+    const res = await this.prisma.$transaction(async (tx) => {
       if (replace) {
         await tx.nft.deleteMany({ where: { gameId: game_id } });
       }
@@ -147,12 +150,14 @@ export class NftService {
 
       return "added";
     });
+
+    return res;
   }
 
   randomizeFixTokenId = createAsyncService<
     typeof endpoints.nft.randomizeFixTokenId
   >(async ({ body: { gameId } }) => {
-    return await this.prisma.$transaction(async (tx) => {
+    const res = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`
       UPDATE
         public.nfts
@@ -173,7 +178,7 @@ export class NftService {
       UPDATE
         public.nfts
       SET
-        "token_id" = sub.token_id
+        "token_id" = sub.token_id,owner=null
       FROM
         (
           SELECT
@@ -199,5 +204,90 @@ export class NftService {
 
       return "fixed";
     });
+    (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      this.updateNftOwnersByGameId(gameId);
+    })();
+    return res;
   });
+
+  async updateNftOwner({
+    address,
+    chainId,
+    tokenId,
+  }: {
+    address: string;
+    tokenId: number;
+    chainId: number;
+  }) {
+    const nft = await this.prisma.nft.findFirst({
+      where: { tokenId, game: { contractAddress: address, chainId } },
+    });
+
+    if (!nft) {
+      console.log(`NFT not found for ${address} ${chainId} ${tokenId}`);
+      return;
+    }
+
+    const contract = new ethers.Contract(
+      address,
+      CONFIG.ABI.SAMPLE721,
+      CONFIG.PROVIDER(chainId),
+    );
+
+    const owner = await contract.ownerOf(tokenId).catch(() => null);
+
+    if (!owner) {
+      console.log(`Owner not found for ${address} ${chainId} ${tokenId}`);
+      return;
+    }
+
+    await this.prisma.nft
+      .update({
+        where: { id: nft.id },
+        data: { owner },
+      })
+      .then(() => console.log(`Updated ${address} ${chainId} ${tokenId}`))
+      .catch((error) =>
+        console.error(
+          `Error updating ${address} ${chainId} ${tokenId} ${{ error }}`,
+        ),
+      );
+  }
+
+  @Cron("0 2 * * *") // 2 AM everyday
+  async updateAllNftOwners() {
+    const games = await this.prisma.game.findMany({
+      where: {
+        contractAddress: { not: null },
+        chainId: { in: CONFIG.SUPPORTED_CHAINS },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    for (const { id } of games) {
+      await this.updateNftOwnersByGameId(id);
+    }
+  }
+
+  async updateNftOwnersByGameId(gameId: string) {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: {
+        contractAddress: true,
+        chainId: true,
+        nfts: { select: { tokenId: true } },
+      },
+    });
+    if (!game || !game.contractAddress || !game.chainId) return;
+    for (const { tokenId } of game.nfts) {
+      await this.updateNftOwner({
+        address: game.contractAddress,
+        tokenId,
+        chainId: game.chainId,
+      });
+    }
+  }
 }

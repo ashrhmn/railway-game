@@ -1,5 +1,10 @@
 import { ethers } from "ethers";
 
+const RPC_URLS = {
+  5: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+  137: "https://polygon-rpc.com",
+};
+
 export const CONFIG = {
   JWT: {
     SECRET: {
@@ -15,12 +20,11 @@ export const CONFIG = {
   },
   NODE_ENV: process.env.NODE_ENV || "development",
   PROVIDER: (chainId: number) =>
-    new ethers.providers.StaticJsonRpcProvider(
-      {
-        5: "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-        137: "https://polygon-rpc.com",
-      }[chainId],
-    ),
+    new ethers.providers.StaticJsonRpcProvider(RPC_URLS[chainId]),
+  RPC_URLS,
+  SUPPORTED_CHAINS: Object.keys(RPC_URLS)
+    .map((c) => +c)
+    .filter((v) => !isNaN(v)),
   ABI: {
     SAMPLE721: [
       {

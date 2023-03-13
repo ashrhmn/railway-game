@@ -39,7 +39,7 @@ export class MapController {
     );
   }
 
-  @Roles("ADMIN", "GAMEDEV")
+  // @Roles("ADMIN", "GAMEDEV")
   @InferMethod(endpoints.map.getPositions)
   getPositions(@Context() context: IContext) {
     return createAsyncController(
@@ -89,7 +89,7 @@ export class MapController {
     );
   }
 
-  @Roles("GAMEDEV")
+  // @Roles("GAMEDEV")
   @InferMethod(endpoints.map.placeNftOnMap)
   placeNftOnMap(@Context() context: IContext) {
     return createAsyncController(
