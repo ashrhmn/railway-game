@@ -101,7 +101,7 @@ export const getAxios =
 const service = getAxios("/api/");
 
 export const socket = io(
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+  process.env.NEXT_PUBLIC_API_URL || "https://api.railway.n3xchain.com/"
 );
 
 export default service;
