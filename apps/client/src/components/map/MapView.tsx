@@ -1,13 +1,13 @@
 import { mapPositions } from "@/data/map.positions";
-import service from "@/service";
+import service, { socket } from "@/service";
 import { getNftJobs, getMapItems } from "@/service/map.service";
 import { clx } from "@/utils/classname.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { promiseToast } from "@/utils/toast.utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import { endpoints } from "api-interface";
-import React, { useMemo, useState } from "react";
+import { endpoints, WS_EVENTS } from "api-interface";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import ErrorView from "../common/ErrorView";
@@ -62,7 +62,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       .catch(handleReqError);
   };
 
-  const { data: currentRailPosition } = useQuery({
+  const { data: currentRailPosition, refetch: refetchRailPosition } = useQuery({
     queryKey: ["rail-current-position", color, gameId],
     queryFn: () =>
       service(endpoints.game.getCurrentRailPosition)({
@@ -93,11 +93,6 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       (p) => p.x === selectedPoint.x && p.y === selectedPoint.y
     );
   }, [positions, selectedPoint.x, selectedPoint.y]);
-
-  if (status === "loading") return <FullScreenSpinner />;
-  if (status === "error") return <ErrorView error={error} />;
-  if (!mapItems) return <div>Error getting map items</div>;
-  if (!nftJobs) return <div>Error getting nft jobs</div>;
 
   const handleAssign = () =>
     promiseToast(
@@ -171,7 +166,22 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       .catch(handleReqError);
   };
 
-  console.log({ currentRailPosition });
+  useEffect(() => {
+    const railChangeEvent = WS_EVENTS.RAIL_POSITION_CHANGED({
+      color,
+      gameId,
+    }).event;
+    socket.on(railChangeEvent, refetchRailPosition);
+
+    return () => {
+      socket.off(railChangeEvent, refetchRailPosition);
+    };
+  }, [color, gameId, refetchRailPosition]);
+
+  if (status === "loading") return <FullScreenSpinner />;
+  if (status === "error") return <ErrorView error={error} />;
+  if (!mapItems) return <div>Error getting map items</div>;
+  if (!nftJobs) return <div>Error getting nft jobs</div>;
 
   return (
     <div className="mt-8 flex flex-wrap gap-3 p-1">
@@ -222,7 +232,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
               </h1>
               <button
                 onClick={() => setSelectedPoint({ x: -1, y: -1 })}
-                className="badge badge-accent"
+                className="badge-accent badge"
               >
                 Reset Selection
               </button>
@@ -235,7 +245,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   !!selectedPointDetails?.prePlaced) && (
                   <button
                     onClick={handleRemove}
-                    className="badge badge-warning"
+                    className="badge-warning badge"
                   >
                     Remove
                   </button>
@@ -372,7 +382,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 (selectedMapItem === "NOT_SELECTED" &&
                   selectedNftJob === "NOT_SELECTED")
               }
-              className={clx("btn btn-accent mt-4")}
+              className={clx("btn-accent btn mt-4")}
             >
               Assign
             </button>

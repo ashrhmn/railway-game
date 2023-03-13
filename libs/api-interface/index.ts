@@ -457,6 +457,25 @@ export const endpoints = {
   },
 } as const;
 
+export const WS_EVENTS = {
+  RAIL_POSITION_CHANGED: ({
+    color,
+    gameId,
+    direction,
+    x,
+    y,
+  }: {
+    gameId: string;
+    color: string;
+    x?: number;
+    y?: number;
+    direction?: string;
+  }) => ({
+    event: `RAIL_POSITION_CHANGED_${color}_${gameId}`,
+    payload: { x, y, direction },
+  }),
+} as const;
+
 // --- API ---
 /*
 

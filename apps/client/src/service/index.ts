@@ -2,6 +2,7 @@ import { IEndpoint } from "api-interface";
 import axios from "axios";
 import { GetServerSidePropsContext, PreviewData } from "next";
 import { ParsedUrlQuery } from "querystring";
+import { io } from "socket.io-client";
 import { z } from "zod";
 
 export const getAxios =
@@ -98,5 +99,7 @@ export const getAxios =
   };
 
 const service = getAxios("/api/");
+
+export const socket = io("http://localhost:4000");
 
 export default service;

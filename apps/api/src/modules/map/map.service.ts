@@ -10,7 +10,7 @@ import {
   NFT_JOB,
   RAIL_DIRECTION,
 } from "@prisma/client";
-import { endpoints } from "api-interface";
+import { endpoints, WS_EVENTS } from "api-interface";
 import { createAsyncService, createService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
 import { CONFIG } from "src/config/app.config";
@@ -603,7 +603,7 @@ export class MapService {
   }
 
   async checkAndMoveRailByGameIdAndColor(gameId: string, color: COLOR) {
-    if (color !== "RED") return;
+    if (color !== COLOR.RED) return;
     const currentRailPosition = await this.prisma.railPosition.findFirst({
       where: { gameId, color },
       orderBy: { createdAt: "desc" },
@@ -688,6 +688,18 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      // this.socketService.socket?.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
+      // );
+      this.emit(
+        WS_EVENTS.RAIL_POSITION_CHANGED({
+          color,
+          gameId,
+          x,
+          y,
+          direction: oppositeDirection,
+        }),
+      );
       return;
     }
 
@@ -723,6 +735,18 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      // this.socketService.socket?.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
+      // );
+      this.emit(
+        WS_EVENTS.RAIL_POSITION_CHANGED({
+          color,
+          gameId,
+          x,
+          y,
+          direction: oppositeDirection,
+        }),
+      );
       return;
     }
 
@@ -747,6 +771,18 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      // this.socketService.socket?.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
+      // );
+      this.emit(
+        WS_EVENTS.RAIL_POSITION_CHANGED({
+          color,
+          gameId,
+          x,
+          y,
+          direction: oppositeDirection,
+        }),
+      );
       return;
     }
 
@@ -767,6 +803,18 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      // this.socketService.socket?.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
+      // );
+      this.emit(
+        WS_EVENTS.RAIL_POSITION_CHANGED({
+          color,
+          gameId,
+          x,
+          y,
+          direction: oppositeDirection,
+        }),
+      );
       return;
     }
 
@@ -807,9 +855,6 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going left ${JSON.stringify({ gameId, color }, null, 2)}`);
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.LEFT, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "LEFT");
       }
       if (nextMapPosition.nft.job === "RAIL_2_6") {
@@ -820,9 +865,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "DOWN");
       }
       if (nextMapPosition.nft.job === "RAIL_6_8") {
@@ -833,9 +875,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "UP");
       }
       console.log(
@@ -858,9 +897,6 @@ export class MapService {
         console.log(
           `Going right ${JSON.stringify({ gameId, color }, null, 2)}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.RIGHT, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "RIGHT");
       }
       if (nextMapPosition.nft.job === "RAIL_2_4") {
@@ -871,9 +907,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "DOWN");
       }
       if (nextMapPosition.nft.job === "RAIL_4_8") {
@@ -884,9 +917,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "UP");
       }
       console.log(
@@ -907,14 +937,6 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going up ${JSON.stringify({ gameId, color }, null, 2)}`);
-        this.socketService.socket?.emit("MESSAGE", {
-          message: "Going up",
-          gameId,
-          color,
-        });
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.UP, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "UP");
       }
       if (nextMapPosition.nft.job === "RAIL_2_6") {
@@ -925,9 +947,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.RIGHT, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "RIGHT");
       }
       if (nextMapPosition.nft.job === "RAIL_2_4") {
@@ -938,9 +957,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.LEFT, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "LEFT");
       }
       console.log(
@@ -961,14 +977,6 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going down ${JSON.stringify({ gameId, color }, null, 2)}`);
-        this.socketService.socket?.emit("MESSAGE", {
-          message: "Going down",
-          gameId,
-          color,
-        });
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.DOWN, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "DOWN");
       }
       if (nextMapPosition.nft.job === "RAIL_6_8") {
@@ -979,9 +987,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.RIGHT, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "RIGHT");
       }
       if (nextMapPosition.nft.job === "RAIL_4_8") {
@@ -992,9 +997,6 @@ export class MapService {
             2,
           )}`,
         );
-        // await this.prisma.railPosition.create({
-        //   data: { color, gameId, direction: RAIL_DIRECTION.LEFT, x, y },
-        // });
         return await this.onPositionChange(color, gameId, x, y, "LEFT");
       }
       console.log(
@@ -1017,7 +1019,7 @@ export class MapService {
     y: number,
     direction: RAIL_DIRECTION,
   ) {
-    return await this.prisma.$transaction(async (tx) => {
+    const res = await this.prisma.$transaction(async (tx) => {
       await tx.railPosition.create({
         data: { color, gameId, direction, x, y },
       });
@@ -1096,6 +1098,16 @@ export class MapService {
         })();
       }
     });
+    // const event = WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId });
+    // console.log("Emitting event", event);
+    this.emit(
+      WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId, x, y, direction }),
+    );
+    return res;
+  }
+
+  emit({ event, payload }: { event: string; payload: any }) {
+    this.socketService.socket?.emit(event, payload);
   }
 
   // updateRailLocation = createAsyncService<
