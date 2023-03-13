@@ -36,6 +36,7 @@ COPY --from=builder /app/apps/client/public/. /app/apps/client/public/.
 COPY libs/api-interface/index.ts /app/apps/client/public/api-interface.ts
 
 EXPOSE 3000
+EXPOSE 4000
 
 ENV NODE_ENV=production
 
