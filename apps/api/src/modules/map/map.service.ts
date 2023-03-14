@@ -673,7 +673,6 @@ export class MapService {
   }
 
   async checkAndMoveRailByGameIdAndColor(gameId: string, color: COLOR) {
-    if (color !== COLOR.RED) return;
     const currentRailPosition = await this.prisma.railPosition.findFirst({
       where: { gameId, color },
       orderBy: { createdAt: "desc" },
@@ -770,9 +769,6 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
-      // this.socketService.socket?.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
-      // );
       return await this.onPositionChange(
         color,
         gameId,
@@ -781,16 +777,6 @@ export class MapService {
         oppositeDirection,
         null,
       );
-      // this.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED(
-      //     {
-      //       color,
-      //       gameId,
-      //     },
-      //     { x, y, direction: oppositeDirection },
-      //   ),
-      // );
-      // return;
     }
 
     const nextMapPosition = await this.prisma.mapPosition.findUnique({
@@ -833,19 +819,6 @@ export class MapService {
         oppositeDirection,
         null,
       );
-      // this.socketService.socket?.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
-      // );
-      // this.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED(
-      //     {
-      //       color,
-      //       gameId,
-      //     },
-      //     { x, y, direction: oppositeDirection },
-      //   ),
-      // );
-      // return;
     }
 
     if (
@@ -877,19 +850,6 @@ export class MapService {
         oppositeDirection,
         null,
       );
-      // this.socketService.socket?.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
-      // );
-      // this.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED(
-      //     {
-      //       color,
-      //       gameId,
-      //     },
-      //     { x, y, direction: oppositeDirection },
-      //   ),
-      // );
-      // return;
     }
 
     if (!!nextMapPosition.enemy && nextMapPosition.enemy.currentStrength > 0) {
@@ -917,19 +877,6 @@ export class MapService {
         oppositeDirection,
         null,
       );
-      // this.socketService.socket?.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
-      // );
-      // this.emit(
-      //   WS_EVENTS.RAIL_POSITION_CHANGED(
-      //     {
-      //       color,
-      //       gameId,
-      //     },
-      //     { x, y, direction: oppositeDirection },
-      //   ),
-      // );
-      // return;
     }
 
     if (!nextMapPosition.nft) {

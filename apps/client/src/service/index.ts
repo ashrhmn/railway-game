@@ -2,8 +2,13 @@ import { IEndpoint } from "api-interface";
 import axios from "axios";
 import { GetServerSidePropsContext, PreviewData } from "next";
 import { ParsedUrlQuery } from "querystring";
-import { io } from "socket.io-client";
 import { z } from "zod";
+
+import { io } from "socket.io-client";
+
+export const socket = io(
+  process.env.NEXT_PUBLIC_API_URL || "https://api.railway.n3xchain.com/"
+);
 
 export const getAxios =
   (baseURL: string) =>
@@ -99,9 +104,5 @@ export const getAxios =
   };
 
 const service = getAxios("/api/");
-
-export const socket = io(
-  process.env.NEXT_PUBLIC_API_URL || "https://api.railway.n3xchain.com/"
-);
 
 export default service;
