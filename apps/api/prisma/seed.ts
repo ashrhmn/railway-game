@@ -2,10 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { COLOR, NFT_JOB, Prisma, PrismaClient } from "@prisma/client";
 import { hash } from "argon2";
+
 export enum SETTINGS_KEY {
   BRIDGE_CONSTRUCTION_TIME = "BRIDGE_CONSTRUCTION_TIME",
-  RAIL_CONSTRUCTION_TIME = "RAIL_CONSTRUCTION_TIME",
+  RAIL_ROAD_CONSTRUCTION_TIME = "RAIL_ROAD_CONSTRUCTION_TIME",
   NFT_LOCK_TIME = "NFT_LOCK_TIME",
+  RAIL_MOVEMENT_LOCK_TIME = "RAIL_MOVEMENT_LOCK_TIME",
 }
 
 const prisma = new PrismaClient();
@@ -94,11 +96,19 @@ async function seedSettings() {
         description: "Time in seconds to lock an NFT for after use",
       },
       {
-        key: SETTINGS_KEY.RAIL_CONSTRUCTION_TIME,
+        key: SETTINGS_KEY.RAIL_ROAD_CONSTRUCTION_TIME,
         valueType: "NUMBER",
         numValue: 600, // 10 minutes
         title: "Rail Road Construction Time",
         description: "Time in seconds to construct a rail road",
+      },
+      {
+        key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME,
+        valueType: "NUMBER",
+        numValue: 600, // 10 minutes
+        title: "Rail Movement Lock Time",
+        description:
+          "Time in seconds to lock the movement of rail after each step",
       },
     ],
   });

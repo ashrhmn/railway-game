@@ -1,13 +1,17 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { endpoints } from "api-interface";
+import { endpoints, WS_EVENTS } from "api-interface";
 import { createAsyncService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
 import { COLOR, GAME_STATUS } from "@prisma/client";
 import { Position } from "src/classes/Position";
+import { SocketService } from "../socket/socket.service";
 
 @Injectable()
 export class GameService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socketService: SocketService,
+  ) {}
 
   getAll = createAsyncService<typeof endpoints.game.getAll>(
     async ({ query: { skip, take } }) => {
@@ -66,6 +70,8 @@ export class GameService {
         where: { id },
         data: { ...body, status: body.status as GAME_STATUS },
       });
+      if (body.status === GAME_STATUS.RUNNING)
+        this.emit(WS_EVENTS.GAME_STARTED({ gameId: id }));
       return "success";
     },
   );
@@ -91,4 +97,8 @@ export class GameService {
 
     return position;
   });
+
+  emit({ event, payload }: { event: string; payload?: any }) {
+    this.socketService.socket?.emit(event, payload);
+  }
 }

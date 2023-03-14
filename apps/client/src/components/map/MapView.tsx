@@ -171,12 +171,25 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       color,
       gameId,
     }).event;
-    socket.on(railChangeEvent, refetchRailPosition);
+
+    const nftPlaceEvent = WS_EVENTS.MAP_POSITIONS_UPDATED({
+      color,
+      gameId,
+    }).event;
+
+    const railChangeEventHandler = () => {
+      refetchRailPosition();
+      refetch();
+    };
+
+    socket.on(railChangeEvent, railChangeEventHandler);
+    socket.on(nftPlaceEvent, refetch);
 
     return () => {
-      socket.off(railChangeEvent, refetchRailPosition);
+      socket.off(railChangeEvent, railChangeEventHandler);
+      socket.off(nftPlaceEvent, refetch);
     };
-  }, [color, gameId, refetchRailPosition]);
+  }, [color, gameId, refetch, refetchRailPosition]);
 
   if (status === "loading") return <FullScreenSpinner />;
   if (status === "error") return <ErrorView error={error} />;

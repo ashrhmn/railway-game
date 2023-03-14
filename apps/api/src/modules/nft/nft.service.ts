@@ -1,6 +1,6 @@
 import { BadRequestException, HttpException, Injectable } from "@nestjs/common";
 import { COLOR, NFT_JOB } from "@prisma/client";
-import { endpoints } from "api-interface";
+import { endpoints, WS_EVENTS } from "api-interface";
 import { createAsyncService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
 import * as csvParser from "csv-parser";
@@ -10,10 +10,14 @@ import { z } from "zod";
 import { ethers } from "ethers";
 import { CONFIG } from "src/config/app.config";
 import { Cron } from "@nestjs/schedule";
+import { SocketService } from "../socket/socket.service";
 
 @Injectable()
 export class NftService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socketService: SocketService,
+  ) {}
 
   getNft = createAsyncService<typeof endpoints.nft.getNft>(
     async ({ param: { id } }) => {
@@ -46,8 +50,8 @@ export class NftService {
         where: {
           gameId,
           level,
-          owner,
           ...(!!color && COLOR[color] ? { color: COLOR[color] } : {}),
+          ...(!!owner ? { owner: { equals: owner, mode: "insensitive" } } : {}),
           abilityR,
           abilityL,
           abilityK,
@@ -242,6 +246,12 @@ export class NftService {
       return;
     }
 
+    if (nft.owner?.toLowerCase() === owner.toLowerCase()) return;
+
+    this.emit(
+      WS_EVENTS.NFT_OWNER_CHANGED({ gameId: nft.gameId, tokenId: nft.tokenId }),
+    );
+
     await this.prisma.nft
       .update({
         where: { id: nft.id },
@@ -289,5 +299,9 @@ export class NftService {
         chainId: game.chainId,
       });
     }
+  }
+
+  emit({ event, payload }: { event: string; payload?: any }) {
+    this.socketService.socket?.emit(event, payload);
   }
 }

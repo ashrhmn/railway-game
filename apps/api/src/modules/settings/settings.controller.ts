@@ -10,7 +10,7 @@ import { SettingsService } from "./settings.service";
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
-  @Roles("ADMIN")
+  // @Roles("ADMIN")
   @InferMethod(endpoints.settings.getAll)
   getAll(@Context() context: IContext) {
     return createAsyncController(

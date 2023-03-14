@@ -1,11 +1,19 @@
 import { Injectable } from "@nestjs/common";
-import { endpoints } from "api-interface";
+import { endpoints, WS_EVENTS } from "api-interface";
 import { createAsyncService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
+import { SocketService } from "../socket/socket.service";
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly socketService: SocketService,
+  ) {}
+
+  emit({ event, payload }: { event: string; payload?: any }) {
+    this.socketService.socket?.emit(event, payload);
+  }
 
   getAll = createAsyncService<typeof endpoints.settings.getAll>(async () => {
     const settings = await this.prisma.settings.findMany({
@@ -20,6 +28,14 @@ export class SettingsService {
         where: { key },
         data: { boolValue, numValue, strValue },
       });
+      this.emit(
+        WS_EVENTS.GAME_PREFERENCE_UPDATED({
+          key,
+          boolValue,
+          numValue,
+          strValue,
+        }),
+      );
       return "updated";
     },
   );

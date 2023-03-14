@@ -458,21 +458,46 @@ export const endpoints = {
 } as const;
 
 export const WS_EVENTS = {
-  RAIL_POSITION_CHANGED: ({
-    color,
-    gameId,
-    direction,
-    x,
-    y,
-  }: {
-    gameId: string;
-    color: string;
-    x?: number;
-    y?: number;
-    direction?: string;
-  }) => ({
+  RAIL_POSITION_CHANGED: (
+    {
+      color,
+      gameId,
+    }: {
+      gameId: string;
+      color: string;
+    },
+    payload?: { x?: number; y?: number; direction?: string } & Record<
+      string,
+      any
+    >,
+  ) => ({
     event: `RAIL_POSITION_CHANGED_${color}_${gameId}`,
-    payload: { x, y, direction },
+    payload,
+  }),
+  MAP_POSITIONS_UPDATED: (
+    { color, gameId }: { gameId: string; color: string },
+    payload?: { x?: number; y?: number; job?: string } & Record<string, any>,
+  ) => ({
+    event: `MAP_POSITIONS_UPDATED_${color}_${gameId}`,
+    payload,
+  }),
+  GAME_STARTED: ({ gameId }: { gameId: string }) => ({
+    event: `GAME_STARTED_${gameId}`,
+  }),
+  GAME_FINISHED: (
+    { gameId }: { gameId: string },
+    payload?: { color: string } & Record<string, any>,
+  ) => ({
+    event: `GAME_FINISHED_${gameId}`,
+    payload,
+  }),
+  NFT_OWNER_CHANGED: (payload: { gameId: string; tokenId: number }) => ({
+    event: `NFT_OWNer_CHANGED`,
+    payload,
+  }),
+  GAME_PREFERENCE_UPDATED: (payload: any) => ({
+    event: `GAME_PREFERENCE_UPDATED`,
+    payload,
   }),
 } as const;
 

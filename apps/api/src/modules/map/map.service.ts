@@ -345,7 +345,9 @@ export class MapService {
         additionalLightUpPositions,
       },
     }) => {
-      return this.prisma.$transaction(async (tx) => {
+      const eventParams: Parameters<typeof WS_EVENTS.MAP_POSITIONS_UPDATED>[] =
+        [];
+      const res = await this.prisma.$transaction(async (tx) => {
         const game = await tx.game.findUnique({
           where: { id: gameId },
         });
@@ -398,90 +400,6 @@ export class MapService {
           },
         });
 
-        if (!mapPosition)
-          throw new NotFoundException(`Map Position not revealed yet`);
-
-        if (!mapPosition.isRevealed)
-          throw new BadRequestException(`Map Position not revealed yet`);
-
-        if (!!mapPosition.mapItem && mapPosition.mapItem === "MOUNTAIN")
-          throw new BadRequestException(`No NFT can be placed on a mountain`);
-
-        if (
-          !!mapPosition.mapItem &&
-          mapPosition.mapItem === "RIVER" &&
-          mapPosition.bridgeConstructedOn < timestamp() &&
-          nft.job !== "BRIDGE"
-        )
-          throw new BadRequestException(
-            `NFT with id ${nftId}(${nft.job}) cannot be placed on river. Only bridge nft can be placed on a river`,
-          );
-
-        if (
-          !!mapPosition.enemy &&
-          mapPosition.enemy.currentStrength > 0 &&
-          nft.job !== "KNIGHT"
-        )
-          throw new BadRequestException(
-            `NFT with id ${nftId}(${nft.job}) cannot be placed on an undefeated enemy. Only knight nft can be used on an undefeated enemy to defeat it`,
-          );
-
-        if (nft.job === "BRIDGE") {
-          if (mapPosition.mapItem !== "RIVER")
-            throw new BadRequestException(
-              `NFT with id ${nftId}(${nft.job}) can only be placed on river`,
-            );
-
-          if (mapPosition.bridgeConstructedOn < timestamp())
-            throw new BadRequestException(
-              `A bridge is already constructed on this river`,
-            );
-
-          const bridgeConstructionBaseTime = await tx.settings.findUnique({
-            where: { key: SETTINGS_KEY.BRIDGE_CONSTRUCTION_TIME },
-            select: { numValue: true },
-          });
-
-          if (
-            !bridgeConstructionBaseTime ||
-            !bridgeConstructionBaseTime.numValue
-          )
-            throw new BadRequestException(`Bridge Construction Time not set`);
-
-          const bridgeConstructionTime = Math.round(
-            bridgeConstructionBaseTime.numValue - (100 - nft.abilityB) / 100,
-          );
-
-          const bridgeConstructedOn = timestamp() + bridgeConstructionTime;
-
-          await tx.mapPosition.update({
-            where: { id: mapPosition.id },
-            data: { bridgeConstructedOn },
-          });
-        }
-
-        if (nft.job === "KNIGHT") {
-          if (!mapPosition.enemy)
-            throw new BadRequestException(
-              `Knight NFT can only be placed on an enemy`,
-            );
-
-          if (mapPosition.enemy.currentStrength <= 0)
-            throw new BadRequestException(
-              `Knight NFT can only be placed on an undefeated enemy. Enemy with id ${mapPosition.enemy.id} is already defeated`,
-            );
-
-          const decrement = Math.min(
-            mapPosition.enemy.currentStrength,
-            nft.abilityK,
-          );
-
-          await tx.enemy.update({
-            where: { id: mapPosition.enemy.id },
-            data: { currentStrength: { decrement } },
-          });
-        }
-
         if (nft.job === "LIGHT") {
           const positionsToReveal = [
             { x, y },
@@ -509,61 +427,194 @@ export class MapService {
               update: { isRevealed: true },
             });
           }
-        }
+          eventParams.push([
+            { color, gameId },
+            { x, y, job: "LIGHT", additionalLightUpPositions },
+          ]);
+          // this.emit(
+          //   WS_EVENTS.MAP_POSITIONS_UPDATED(
+          //     { color, gameId },
+          //     { x, y, job: "LIGHT", additionalLightUpPositions },
+          //   ),
+          // );
+        } else {
+          if (!mapPosition)
+            throw new NotFoundException(`Map Position not revealed yet`);
 
-        if (
-          Object.keys(NFT_JOB)
-            .filter((v) => v.startsWith("RAIL_"))
-            .includes(nft.job)
-        ) {
-          const currentRailPosition = await tx.railPosition.findFirst({
-            where: { color: color, gameId: gameId },
-            orderBy: { createdAt: "desc" },
-          });
+          if (!mapPosition.isRevealed)
+            throw new BadRequestException(`Map Position not revealed yet`);
 
-          if (!currentRailPosition)
-            throw new BadRequestException(
-              "Current position for rail not found",
-            );
-
-          if (currentRailPosition.x === x && currentRailPosition.y === y)
-            throw new BadRequestException(
-              `Rail NFT can not be placed on the same position as current rail position`,
-            );
-
-          const railRoadConstructionBaseTime = await tx.settings.findUnique({
-            where: { key: SETTINGS_KEY.RAIL_CONSTRUCTION_TIME },
-            select: { numValue: true },
-          });
+          if (!!mapPosition.mapItem && mapPosition.mapItem === "MOUNTAIN")
+            throw new BadRequestException(`No NFT can be placed on a mountain`);
 
           if (
-            !railRoadConstructionBaseTime ||
-            !railRoadConstructionBaseTime.numValue
+            !!mapPosition.mapItem &&
+            mapPosition.mapItem === "RIVER" &&
+            mapPosition.bridgeConstructedOn < timestamp() &&
+            nft.job !== "BRIDGE"
           )
             throw new BadRequestException(
-              `Rail Road Construction Time not set`,
+              `NFT with id ${nftId}(${nft.job}) cannot be placed on river. Only bridge nft can be placed on a river`,
             );
 
-          const railRoadConstructionTime = Math.round(
-            railRoadConstructionBaseTime.numValue *
-              ((100 - nft.abilityR) / 100),
-          );
+          if (
+            !!mapPosition.enemy &&
+            mapPosition.enemy.currentStrength > 0 &&
+            nft.job !== "KNIGHT"
+          )
+            throw new BadRequestException(
+              `NFT with id ${nftId}(${nft.job}) cannot be placed on an undefeated enemy. Only knight nft can be used on an undefeated enemy to defeat it`,
+            );
 
-          const railConstructedOn = timestamp() + railRoadConstructionTime;
+          if (nft.job === "BRIDGE") {
+            if (mapPosition.mapItem !== "RIVER")
+              throw new BadRequestException(
+                `NFT with id ${nftId}(${nft.job}) can only be placed on river`,
+              );
 
-          await tx.mapPosition.upsert({
-            where: { x_y_gameId_color: { x, y, gameId, color } },
-            create: {
-              x,
-              y,
-              color,
-              gameId,
-              railConstructedOn,
-            },
-            update: {
-              railConstructedOn,
-            },
-          });
+            if (mapPosition.bridgeConstructedOn < timestamp())
+              throw new BadRequestException(
+                `A bridge is already constructed on this river`,
+              );
+
+            const bridgeConstructionBaseTime = await tx.settings.findUnique({
+              where: { key: SETTINGS_KEY.BRIDGE_CONSTRUCTION_TIME },
+              select: { numValue: true },
+            });
+
+            if (
+              !bridgeConstructionBaseTime ||
+              !bridgeConstructionBaseTime.numValue
+            )
+              throw new BadRequestException(`Bridge Construction Time not set`);
+
+            const bridgeConstructionTime = Math.round(
+              bridgeConstructionBaseTime.numValue - (100 - nft.abilityB) / 100,
+            );
+
+            const bridgeConstructedOn = timestamp() + bridgeConstructionTime;
+
+            await tx.mapPosition.update({
+              where: { id: mapPosition.id },
+              data: { bridgeConstructedOn },
+            });
+
+            eventParams.push([
+              { color, gameId },
+              { x, y, bridgeConstructedOn, job: "BRIDGE" },
+            ]);
+
+            // this.emit(
+            //   WS_EVENTS.MAP_POSITIONS_UPDATED(
+            //     { color, gameId },
+            //     { x, y, bridgeConstructedOn, job: "BRIDGE" },
+            //   ),
+            // );
+          }
+
+          if (nft.job === "KNIGHT") {
+            if (!mapPosition.enemy)
+              throw new BadRequestException(
+                `Knight NFT can only be placed on an enemy`,
+              );
+
+            if (mapPosition.enemy.currentStrength <= 0)
+              throw new BadRequestException(
+                `Knight NFT can only be placed on an undefeated enemy. Enemy with id ${mapPosition.enemy.id} is already defeated`,
+              );
+
+            const decrement = Math.min(
+              mapPosition.enemy.currentStrength,
+              nft.abilityK,
+            );
+
+            await tx.enemy.update({
+              where: { id: mapPosition.enemy.id },
+              data: { currentStrength: { decrement } },
+            });
+            eventParams.push([
+              { color, gameId },
+              {
+                x,
+                y,
+                job: "KNIGHT",
+                message: "ENEMY_STRENGTH_DECREMENTED",
+                decrement,
+              },
+            ]);
+            // this.emit(
+            //   WS_EVENTS.MAP_POSITIONS_UPDATED(
+            //     { color, gameId },
+            //     {
+            //       x,
+            //       y,
+            //       job: "KNIGHT",
+            //       message: "ENEMY_STRENGTH_DECREMENTED",
+            //       decrement,
+            //     },
+            //   ),
+            // );
+          }
+
+          if (
+            Object.keys(NFT_JOB)
+              .filter((v) => v.startsWith("RAIL_"))
+              .includes(nft.job)
+          ) {
+            const currentRailPosition = await tx.railPosition.findFirst({
+              where: { color: color, gameId: gameId },
+              orderBy: { createdAt: "desc" },
+            });
+
+            if (!currentRailPosition)
+              throw new BadRequestException(
+                "Current position for rail not found",
+              );
+
+            if (currentRailPosition.x === x && currentRailPosition.y === y)
+              throw new BadRequestException(
+                `Rail NFT can not be placed on the same position as current rail position`,
+              );
+
+            const railRoadConstructionBaseTime = await tx.settings.findUnique({
+              where: { key: SETTINGS_KEY.RAIL_ROAD_CONSTRUCTION_TIME },
+              select: { numValue: true },
+            });
+
+            if (
+              !railRoadConstructionBaseTime ||
+              !railRoadConstructionBaseTime.numValue
+            )
+              throw new BadRequestException(
+                `Rail Road Construction Time not set`,
+              );
+
+            const railRoadConstructionTime = Math.round(
+              railRoadConstructionBaseTime.numValue *
+                ((100 - nft.abilityR) / 100),
+            );
+
+            const railConstructedOn = timestamp() + railRoadConstructionTime;
+
+            await tx.mapPosition.upsert({
+              where: { x_y_gameId_color: { x, y, gameId, color } },
+              create: {
+                x,
+                y,
+                color,
+                gameId,
+                railConstructedOn,
+              },
+              update: {
+                railConstructedOn,
+              },
+            });
+
+            eventParams.push([
+              { color, gameId },
+              { x, y, job: nft.job, railConstructedOn },
+            ]);
+          }
         }
 
         const nftFrozenTime = await tx.settings.findUnique({
@@ -574,10 +625,23 @@ export class MapService {
         if (!nftFrozenTime || !nftFrozenTime.numValue)
           throw new BadRequestException(`NFT Frozen Time not set`);
 
+        const frozenTill = timestamp() + nftFrozenTime.numValue;
+
         await tx.nft.update({
           where: { id: nft.id },
-          data: { frozenTill: timestamp() + nftFrozenTime.numValue },
+          data: { frozenTill },
         });
+
+        eventParams.push([
+          { color, gameId },
+          {
+            x,
+            y,
+            job: nft.job,
+            message: "NFT_FROZEN",
+            frozenTill,
+          },
+        ]);
 
         await tx.mapPosition.upsert({
           where: { x_y_gameId_color: { x, y, gameId, color } },
@@ -586,6 +650,12 @@ export class MapService {
         });
         return "placed";
       });
+
+      eventParams.forEach((params) => {
+        this.emit(WS_EVENTS.MAP_POSITIONS_UPDATED(...params));
+      });
+
+      return res;
     },
   );
 
@@ -620,9 +690,19 @@ export class MapService {
       return;
     }
 
+    const railMovementLockTime = await this.prisma.settings.findUnique({
+      where: { key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME },
+      select: { numValue: true },
+    });
+
+    if (!railMovementLockTime || !railMovementLockTime.numValue) {
+      console.info(`Rail movement lock time is not set`);
+      return;
+    }
+
     if (
       Math.round(currentRailPosition.createdAt.valueOf() / 1000) >
-      timestamp() - 60
+      timestamp() - railMovementLockTime.numValue
     ) {
       console.info(
         `Rail is not ready to move yet for game: ${JSON.stringify(
@@ -633,6 +713,8 @@ export class MapService {
       );
       return;
     }
+
+    const { x: xCurr, y: yCurr } = currentRailPosition;
 
     const currentPosition = new Position(
       currentRailPosition.x,
@@ -691,16 +773,24 @@ export class MapService {
       // this.socketService.socket?.emit(
       //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
       // );
-      this.emit(
-        WS_EVENTS.RAIL_POSITION_CHANGED({
-          color,
-          gameId,
-          x,
-          y,
-          direction: oppositeDirection,
-        }),
+      return await this.onPositionChange(
+        color,
+        gameId,
+        xCurr,
+        yCurr,
+        oppositeDirection,
+        null,
       );
-      return;
+      // this.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED(
+      //     {
+      //       color,
+      //       gameId,
+      //     },
+      //     { x, y, direction: oppositeDirection },
+      //   ),
+      // );
+      // return;
     }
 
     const nextMapPosition = await this.prisma.mapPosition.findUnique({
@@ -735,19 +825,27 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      return await this.onPositionChange(
+        color,
+        gameId,
+        xCurr,
+        yCurr,
+        oppositeDirection,
+        null,
+      );
       // this.socketService.socket?.emit(
       //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
       // );
-      this.emit(
-        WS_EVENTS.RAIL_POSITION_CHANGED({
-          color,
-          gameId,
-          x,
-          y,
-          direction: oppositeDirection,
-        }),
-      );
-      return;
+      // this.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED(
+      //     {
+      //       color,
+      //       gameId,
+      //     },
+      //     { x, y, direction: oppositeDirection },
+      //   ),
+      // );
+      // return;
     }
 
     if (
@@ -771,19 +869,27 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      return await this.onPositionChange(
+        color,
+        gameId,
+        xCurr,
+        yCurr,
+        oppositeDirection,
+        null,
+      );
       // this.socketService.socket?.emit(
       //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
       // );
-      this.emit(
-        WS_EVENTS.RAIL_POSITION_CHANGED({
-          color,
-          gameId,
-          x,
-          y,
-          direction: oppositeDirection,
-        }),
-      );
-      return;
+      // this.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED(
+      //     {
+      //       color,
+      //       gameId,
+      //     },
+      //     { x, y, direction: oppositeDirection },
+      //   ),
+      // );
+      // return;
     }
 
     if (!!nextMapPosition.enemy && nextMapPosition.enemy.currentStrength > 0) {
@@ -803,19 +909,27 @@ export class MapService {
           y: currentRailPosition.y,
         },
       });
+      return await this.onPositionChange(
+        color,
+        gameId,
+        xCurr,
+        yCurr,
+        oppositeDirection,
+        null,
+      );
       // this.socketService.socket?.emit(
       //   WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }),
       // );
-      this.emit(
-        WS_EVENTS.RAIL_POSITION_CHANGED({
-          color,
-          gameId,
-          x,
-          y,
-          direction: oppositeDirection,
-        }),
-      );
-      return;
+      // this.emit(
+      //   WS_EVENTS.RAIL_POSITION_CHANGED(
+      //     {
+      //       color,
+      //       gameId,
+      //     },
+      //     { x, y, direction: oppositeDirection },
+      //   ),
+      // );
+      // return;
     }
 
     if (!nextMapPosition.nft) {
@@ -855,7 +969,14 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going left ${JSON.stringify({ gameId, color }, null, 2)}`);
-        return await this.onPositionChange(color, gameId, x, y, "LEFT");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "LEFT",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_2_6") {
         console.log(
@@ -865,7 +986,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "DOWN");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "DOWN",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_6_8") {
         console.log(
@@ -875,7 +1003,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "UP");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "UP",
+          nextMapPosition.mapItem,
+        );
       }
       console.log(
         "Attempt left, but nft job mismatch",
@@ -897,7 +1032,14 @@ export class MapService {
         console.log(
           `Going right ${JSON.stringify({ gameId, color }, null, 2)}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "RIGHT");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "RIGHT",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_2_4") {
         console.log(
@@ -907,7 +1049,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "DOWN");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "DOWN",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_4_8") {
         console.log(
@@ -917,7 +1066,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "UP");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "UP",
+          nextMapPosition.mapItem,
+        );
       }
       console.log(
         "Attempt right, but nft job mismatch",
@@ -937,7 +1093,14 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going up ${JSON.stringify({ gameId, color }, null, 2)}`);
-        return await this.onPositionChange(color, gameId, x, y, "UP");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "UP",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_2_6") {
         console.log(
@@ -947,7 +1110,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "RIGHT");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "RIGHT",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_2_4") {
         console.log(
@@ -957,7 +1127,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "LEFT");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "LEFT",
+          nextMapPosition.mapItem,
+        );
       }
       console.log(
         "Attempt up, but nft job mismatch",
@@ -977,7 +1154,14 @@ export class MapService {
         nextMapPosition.nft.job === "RAIL_2_4_6_8"
       ) {
         console.log(`Going down ${JSON.stringify({ gameId, color }, null, 2)}`);
-        return await this.onPositionChange(color, gameId, x, y, "DOWN");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "DOWN",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_6_8") {
         console.log(
@@ -987,7 +1171,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "RIGHT");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "RIGHT",
+          nextMapPosition.mapItem,
+        );
       }
       if (nextMapPosition.nft.job === "RAIL_4_8") {
         console.log(
@@ -997,7 +1188,14 @@ export class MapService {
             2,
           )}`,
         );
-        return await this.onPositionChange(color, gameId, x, y, "LEFT");
+        return await this.onPositionChange(
+          color,
+          gameId,
+          x,
+          y,
+          "LEFT",
+          nextMapPosition.mapItem,
+        );
       }
       console.log(
         "Attempt down, but nft job mismatch",
@@ -1018,11 +1216,24 @@ export class MapService {
     x: number,
     y: number,
     direction: RAIL_DIRECTION,
+    mapItem: MAP_ITEMS | null,
   ) {
+    const eventParams: Parameters<typeof WS_EVENTS.MAP_POSITIONS_UPDATED>[] =
+      [];
     const res = await this.prisma.$transaction(async (tx) => {
       await tx.railPosition.create({
         data: { color, gameId, direction, x, y },
       });
+      if (mapItem === "CHECKPOINT") {
+        await tx.mapPosition.update({
+          where: { x_y_gameId_color: { x, y, gameId, color } },
+          data: { checkPointPassed: true },
+        });
+        eventParams.push([
+          { gameId, color },
+          { x, y, message: "CHECKPOINT_PASSED" },
+        ]);
+      }
       const root = new Position(x, y);
 
       const positionsToReveal = [
@@ -1065,45 +1276,62 @@ export class MapService {
           update: { x, y, color: color as COLOR, gameId, isRevealed: true },
         });
       }
-      if (x === 0 && y === 0) {
-        await tx.game.update({
-          where: { id: gameId },
-          data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
-        });
-        await tx.nft.updateMany({
-          data: { level: { increment: 1 } },
-          where: { gameId, color: color as COLOR },
-        });
-        const nfts = await tx.nft.findMany({
-          where: { gameId },
-          select: { id: true },
-        });
-        // TODO: update BLKR values
-        (async () => {
-          for (const { id } of nfts) {
-            const job =
-              Object.keys(NFT_JOB)[
-                getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
-              ];
-            const color =
-              Object.keys(COLOR)[
-                getRandomNumber(0, Object.keys(COLOR).length - 1)
-              ];
-            if (!job || !color) throw new Error("Invalid random job or color");
-            await tx.nft.update({
-              where: { id },
-              data: { job: job as NFT_JOB, color: color as COLOR },
-            });
-          }
-        })();
-      }
+      eventParams.push([
+        { color, gameId },
+        { x, y, message: "POSITIONS_REVEALED", positions: positionsToReveal },
+      ]);
     });
-    // const event = WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId });
-    // console.log("Emitting event", event);
+    eventParams.forEach((params) => {
+      this.emit(WS_EVENTS.MAP_POSITIONS_UPDATED(...params));
+    });
     this.emit(
-      WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId, x, y, direction }),
+      WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }, { x, y, direction }),
     );
+    if (x === 0 && y === 0) this.checkWinner(color, gameId, x, y);
     return res;
+  }
+
+  async checkWinner(color: COLOR, gameId: string, x: number, y: number) {
+    if (x !== 0 || y !== 0) return;
+    const unpassedCheckPoints = await this.prisma.mapPosition.count({
+      where: { mapItem: "CHECKPOINT", checkPointPassed: false, gameId, color },
+    });
+
+    if (unpassedCheckPoints > 0) return;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.game.update({
+        where: { id: gameId },
+        data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
+      });
+      await tx.nft.updateMany({
+        data: { level: { increment: 1 } },
+        where: { gameId, color: color as COLOR },
+      });
+      const nfts = await tx.nft.findMany({
+        where: { gameId },
+        select: { id: true },
+      });
+      // TODO: update BLKR values
+      (async () => {
+        for (const { id } of nfts) {
+          const job =
+            Object.keys(NFT_JOB)[
+              getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
+            ];
+          const color =
+            Object.keys(COLOR)[
+              getRandomNumber(0, Object.keys(COLOR).length - 1)
+            ];
+          if (!job || !color) throw new Error("Invalid random job or color");
+          await tx.nft.update({
+            where: { id },
+            data: { job: job as NFT_JOB, color: color as COLOR },
+          });
+        }
+      })();
+    });
+
+    this.emit(WS_EVENTS.GAME_FINISHED({ gameId }, { color }));
   }
 
   emit({ event, payload }: { event: string; payload: any }) {

@@ -1,6 +1,7 @@
 import ErrorView from "@/components/common/ErrorView";
 import FullScreenSpinner from "@/components/common/FullScreenSpinner";
 import service from "@/service";
+import { serverSideAuth } from "@/service/serverSideAuth";
 import { getAllSettings } from "@/service/settings.service";
 import { clx } from "@/utils/classname.utils";
 import { handleReqError } from "@/utils/error.utils";
@@ -28,8 +29,10 @@ type Props = {
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  const auth = await serverSideAuth(context);
+  if ("redirect" in auth) return auth;
   const settings = await getAllSettings(context);
-  return { props: { settings } };
+  return { props: { ...auth.props, settings } };
 };
 
 const SettingsPage: NextPage<Props> = ({ settings: initialSettings }) => {
@@ -152,7 +155,7 @@ const EditForm = ({
       <button
         type="reset"
         onClick={() => setEditingSetting(null)}
-        className="btn btn-xs btn-circle"
+        className="btn-xs btn-circle btn"
       >
         <XMarkIcon className="h-4 w-4" />
       </button>
@@ -192,7 +195,7 @@ const EditForm = ({
         )}
       </div>
       <div className="mt-4">
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn-primary btn">
           Update
         </button>
       </div>
