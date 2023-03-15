@@ -346,6 +346,8 @@ export const endpoints = {
         .object({
           x: z.number().min(0).max(14),
           y: z.number().min(0).max(14),
+          direction: z.string(),
+          createdAt: z.number(),
         })
         .passthrough(),
       querySchema: z.object({ color: z.string(), gameId: z.string() }),
@@ -492,7 +494,7 @@ export const WS_EVENTS = {
     payload,
   }),
   NFT_OWNER_CHANGED: (payload: { gameId: string; tokenId: number }) => ({
-    event: `NFT_OWNer_CHANGED`,
+    event: `NFT_OWNER_CHANGED`,
     payload,
   }),
   GAME_PREFERENCE_UPDATED: (payload: any) => ({
@@ -506,46 +508,45 @@ export const WS_EVENTS = {
 
 GameDev Notes
 
-1. First you will have to login to the game using username password
-2. Check on line no 78 which is login route
-3. On the route the pattern is auth/login and the method is POST
-4. So, you will have to send a POST request to https://railway.n3xchain.com/api/auth/login
-5. As the bodyschema you can see it requires a object with username and password in it. It also defines the types so, the username is string and password is string
-6. So, when you send a post request to https://railway.n3xchain.com/api/auth/login with body as {username: "your username", password: "your password"} you will get a response with a object and the object consistes of access_token and refresh_token and both are string type
 
-7. Now, you will have to use the access_token to access the other protected routes as they are not public
+So, now we have removed the login system for the game view. So, you do not have to login to the platform.
 
-8. When you add a headder with your request and the access_token in it, our application knows that it is you requesting to the server, so only then we provide data and otherwise not
+On the platform we can have multiple game running or waiting in the pipeline. 
 
-9. You will have to add a header with the key 'authorization' and value as the access_token you acquired previously
+So, to get all the games on this platform you can use the game.getAll endpoint from above (/api/games) it will return with all the running games with the game id. User can choose to enter a running game from their. In the list we also have a status field that could be waiting/running/finished.
 
-10. Now, you can access the other routes as they are protected and you will get the data, but in each request you have to provide that access_token
+Each game will have 10 maps and 10 color for the maps. You can use the map.getColors endpoint to get all the available colors
 
+Then, when an user enters the red map on game 1, you will have to fetch the map information using the map.getPositions endpoint. You will have to pass the gameId and color as query parapeter as you can already see on the endpoint schema above. From this endpoint you will get a list of positions and available items on that position. positions will be starting from 0,0 and end with 14,14. If the endpoint does not return a position, it means that the position is empty. So, you will render a dark empty field at that position. On the array of positions, we have a property named mapItem. This property could be a mountain or river or checpoint. So, you will have to render the map item on that position. We also have an nft property on the position object that will mean a user has placed an nft on this position. So, you will have to render the nft on that position. nft property also has a property that is job and job could be a bridge nft, light nft, knight nft or a railroad nft of different shapes (rail24,rail46,rail68). So, you will have to render those shaped railroad on the map.
 
+By the game rules, rail can not go through a river so, they will have to place a bridge nft on a river. So, we have a bridgeConstructedOn property that indicates a timestamp (epoch timestamp). If the timestamp is 0 or less than the timestamp of current time, that means a bridge is not constructed on that river. If the timestamp is greater than the current time, that means a bridge is constructed on that river. So, you will have to render a bridge on that river.
 
-11. You can also see a route that is used to get all the games from game.getAll
-12. The pattern is games and the method is GET (by default if it is not specified)
+If the construction complete timestamp is in future that means it will be completed by that time. So, you will have to show a timer on that place indicating the time left for the construction to complete.
 
-13. So, you will have to send a GET request to https://railway.n3xchain.com/api/games
+Same thing happens for railConstrcutedOn value. This indicates that this railroad will be constructed at this timestamp. So, you can show a timer on that place indicating the time left for the construction to complete.
 
-14. As the responseSchema here says, you will get back an array of object containing id,name,status and more.
+If you see an nft or specifically a rail nft on a river that has the bridge already constructed (bridgeConstructedOn is greater than now time), you will have to render a rail road on that bridge.
 
-So, this is how all the api routes work, you can see the other routes and their usage in the code above
+regarding the timestamp, all over the platform is using epoch format for timestamp. In case of javascript you can fo Date.now()/1000 to get the epoch time of current timestamp. You can also do Math.round(Date.now() / 1000) to get the rounded epoch time of current timestamp.
 
-So, for the game workflow, at first the user will come to the game app and connect their wallet. From that, you get the wallet address of the user. On line 112, you can see a getAllNfts route. You can hit this api following the pattern and get an array of NFTs. on the query schema you can see there is a owner option. So, you can use something like this, https://railway.n3xchain.com/api/nfts?owner=0x1234567890abcdef1234567890abcdef12345678 and you will get all the NFTs owned by that address. So, the part after ? is just filtering out items. But this will return nfts from all games, but in that case you might want to pass a gameId alongside and hit the url like this, https://railway.n3xchain.com/api/nfts?owner=0x1234567890abcdef1234567890abcdef12345678&gameId=abcdefg and you will get all the NFTs owned by that address in that game.
+On the position, plePlaced item is the rail roads that has been preinstalled by the game admins, so they gets rendered on the map as well.
 
-Initially you do not have the game id, but you can hit the game.getAll route from the aboev object and in return you get all the games with its ids alongside the game status. Usually when the user connects, they will connect to the currently running game, so you can check the status RUNNING from the array of game list and the provide the id of a running game to the above url and get all the NFTs owned by that address in that game.
-
-So, you can list all the nfts owned by that user for them so they can place them on the map.
-
-But the map, to get the map information use the map.getPositions route and pass the game id and color(all game has 10 color maps, you can get all possible colors using the map.getColors route) as query param. So, the url will be like this, https://railway.n3xchain.com/api/map/positions?gameId=abcdefg&color=RED and you will get all the positions of the nfts in that game.
-
-on the resoonse you will get an array of objects and the object will contain the mapItem (RIVER,MOUNTAIN,CHECKPOINT, also you can possible mapItem values using the map.getMapItems route). As you can see the mapItem property is nullable, so in a possition there could be a map item or not. If there is one you will render it on the game screen. Similarly prePlaced are the pre existing rail roads on a map you can render them as the data response comes back. nft is the property nft that is already placed on that position. bridgeConstructedOn is number type and it is a timestamp in seconds. In javascript you can get current timestamp using Math.round(Date.now()/1000). You can compare the bridgeConstructedOn value with current timestamp. If the value less that current timestamp that means a bridge construction is completed on that position. If the value is greater than current timestamps that means the bridge is still under construction and the construction will be completed at that timestamp. Using the timestamp you can show a timer until that timestamp on the map that shows after this time the bridge will be constructed. Same thing applies for railConstructedOn. Wehn a user assigns an nft on the map, that rail has to complete constructions and this will show you the timestamp of last completion or the time in future if the construction is not completed yet. enemy is also a nullable value here, so a position might or might not have an enemy.
-
-So, this way you can get the map informations from the server.
-
-When a user wants to place an nft on the map, you can user the map.placeNft route and pass the game id, color, x, y, nftId etc(check the bodySchema).  You will get a response with a message that the nft is placed on the map. if anything wrong happens we are throwing error http status. So, you can check the status code and show the error message to the user. if the status code is 200 or 201 that means the nft is placed on the map successfully. Anything other than 200 and 201 means something went wrong and our response will contain information about what went wrong.
+On the position, you will be seeing that isRevealed value is true for all the positions. that's because unrevealed positions will stay hidden or dark until they are revealed by the users. So, we are not exposing the revealed positions and you can render dark map on the positions that we do not return.
 
 
-We also have another route that is map.updateRailLocation. By the rules, rail will automatically travel to the next available rail tracks if the constructions is completed. There are some other rules too regarding the collision with mountain and all. You can check the requirement doc for that. So, you will have to find out the next location of the rail according to the rule every 10minutes. Every 10minutes you will be sending a post request to the map.updateRailLocation  and pass the required information on it (defined in the endpoint above). If you get a ok response that means placement was successful and thus the rail can move forward. So, every 10minutes you will be sending information regarding the new location and if the response is that means everything is good to go.
+If mapItem is a checkpoint and checkPointPassed value is true, that means the checkpoint has been passed by the user and otherwise not
+
+
+if the enemy is present in the map position, that means the map position has an enemy there. There could be multiple enemies with same id (enemyId). If the enemy ids are same for more than one position, that means there is only one enemy taking place of all those squares. Usually enemy can be of size 1 square or 4 square or 6 square. So, if you see 6 enemies with same id on 6 map positions, that means there is one enemy taking place of 6 squares. enemy has a strenth propery and a current strength property. Enemy strength will be shown as a bar on the enemy.
+
+You can use the game.getCurrentRailPosition to get the current position of the rail, you will still have to pass the gameId and color here to get the result. rail position will also include the direction, which indicates which direction the rail is front faced to. So, you will have to render the rail in that direction.
+
+Rail has a locking time, you can get the time by quering settings.getAll endpoint. And the values will be in seconds. So, on the current rail position you will be checking created_at value (epoch timestamp). If the created_at + locking time is greater than the current time, that means the rail is locked and you will have to show a timer on that rail indicating the time left for the rail to be unlocked.
+
+There are some webcocket events available you acn find the WS_EVENtS object.
+
+You can use the WS_EVENTS.RAIL_POSITION_CHANGED to get the updated rail positions. You will have to pass the gameId and color as specified. So, if the user is on game1 and red map, you will be listening to event RAIL_POSITION_CHANGED_RED_game1. You will get the updated rail positions on this event. Then you can refetch the current rail position using the game.getCurrentRailPosition endpoint.
+
+You can use the WS_EVENTS.MAP_POSITIONS_UPDATED to get the updated map positions. You will have to pass the gameId and color as specified. So, if the user is on game1 and red map, you will be listening to event MAP_POSITIONS_UPDATED_RED_game1. If any event is emitted you can then query the map.getPositions endpoint to get the updated map positions.
+
 */

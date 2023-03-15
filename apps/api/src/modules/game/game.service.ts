@@ -95,7 +95,10 @@ export class GameService {
 
     if (!position) throw new BadRequestException("Rail not placed yet");
 
-    return position;
+    return {
+      ...position,
+      createdAt: Math.round(position.createdAt.valueOf() / 1000),
+    };
   });
 
   emit({ event, payload }: { event: string; payload?: any }) {
