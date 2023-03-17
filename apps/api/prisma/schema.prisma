@@ -85,27 +85,45 @@ enum MAP_ITEMS {
   MOUNTAIN
   RIVER
   CHECKPOINT
+  FIELD
+}
+
+enum MAP_ITEM_VARIANT {
+  RIVER_HORIZONTAL
+  RIVER_VERTICAL
+  RIVER_LEFT_TOP
+  RIVER_LEFT_BOTTOM
+  RIVER_RIGHT_TOP
+  RIVER_RIGHT_BOTTOM
+  MOUNTAIN_1
+  MOUNTAIN_2
+  FIELD_1
+  FIELD_2
+  FIELD_3
+  FIELD_4
+  FIELD_5
 }
 
 model MapPosition {
-  id                  String     @id @default(cuid())
+  id                  String            @id @default(cuid())
   x                   Int
   y                   Int
   color               COLOR
-  checkPointPassed    Boolean    @default(false)
-  bridgeConstructedOn Int        @default(0) @map("bridge_constructed_on")
-  railConstructedOn   Int        @default(0) @map("rail_constructed_on")
-  nft                 Nft?       @relation(fields: [nftId], references: [id])
-  mapItem             MAP_ITEMS? @map("map_item")
-  prePlaced           NFT_JOB?   @map("pre_placed")
-  isRevealed          Boolean    @default(false) @map("is_revealed")
-  game                Game       @relation(fields: [gameId], references: [id])
-  gameId              String     @map("game_id")
-  enemy               Enemy?     @relation(fields: [enemyId], references: [id])
+  checkPointPassed    Boolean           @default(false)
+  bridgeConstructedOn Int               @default(0) @map("bridge_constructed_on")
+  railConstructedOn   Int               @default(0) @map("rail_constructed_on")
+  nft                 Nft?              @relation(fields: [nftId], references: [id])
+  mapItem             MAP_ITEMS?        @map("map_item")
+  mapItemVariant      MAP_ITEM_VARIANT? @map("map_item_variant")
+  prePlaced           NFT_JOB?          @map("pre_placed")
+  isRevealed          Boolean           @default(false) @map("is_revealed")
+  game                Game              @relation(fields: [gameId], references: [id])
+  gameId              String            @map("game_id")
+  enemy               Enemy?            @relation(fields: [enemyId], references: [id])
   enemyId             String?
   nftId               String?
-  createdAt           DateTime   @default(now()) @map("created_at")
-  updatedAt           DateTime   @updatedAt @map("updated_at")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
 
   @@unique([x, y, gameId, color])
   @@map("map_positions")

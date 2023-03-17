@@ -180,6 +180,7 @@ export const endpoints = {
           y: z.number().min(0).max(14),
           color: z.string(),
           mapItem: z.string().nullable(),
+          mapItemVariant: z.string().nullable(),
           prePlaced: z.string().nullable(),
           gameId: z.string(),
           isRevealed: z.boolean(),
