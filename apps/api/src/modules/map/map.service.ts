@@ -225,6 +225,8 @@ export class MapService {
               x,
               y,
               mapItem: MAP_ITEMS.MOUNTAIN,
+              color: COLOR[color],
+              gameId,
             })),
           },
         });
@@ -240,6 +242,8 @@ export class MapService {
               x,
               y,
               enemyId: { not: null },
+              color: COLOR[color],
+              gameId,
             })),
           },
         });
@@ -293,6 +297,8 @@ export class MapService {
               x,
               y,
               mapItem: MAP_ITEMS.MOUNTAIN,
+              color: COLOR[color],
+              gameId,
             })),
           },
         });
@@ -308,6 +314,8 @@ export class MapService {
               x,
               y,
               enemyId: { not: null },
+              color: COLOR[color],
+              gameId,
             })),
           },
         });
