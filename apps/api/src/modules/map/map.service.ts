@@ -438,12 +438,32 @@ export class MapService {
             { color, gameId },
             { x, y, job: "LIGHT", additionalLightUpPositions },
           ]);
-          // this.emit(
-          //   WS_EVENTS.MAP_POSITIONS_UPDATED(
-          //     { color, gameId },
-          //     { x, y, job: "LIGHT", additionalLightUpPositions },
-          //   ),
-          // );
+
+          const lightNftFrozenTime = await tx.settings.findUnique({
+            where: { key: SETTINGS_KEY.LIGHT_NFT_LOCKING_TIME },
+            select: { numValue: true },
+          });
+
+          if (!lightNftFrozenTime || !lightNftFrozenTime.numValue)
+            throw new BadRequestException(`Light NFT Frozen Time not set`);
+
+          const frozenTill = timestamp() + lightNftFrozenTime.numValue;
+
+          await tx.nft.update({
+            where: { id: nft.id },
+            data: { frozenTill },
+          });
+
+          eventParams.push([
+            { color, gameId },
+            {
+              x,
+              y,
+              job: nft.job,
+              message: "LIGHT_NFT_FROZEN",
+              frozenTill,
+            },
+          ]);
         } else {
           if (!mapPosition)
             throw new NotFoundException(`Map Position not revealed yet`);
@@ -622,33 +642,32 @@ export class MapService {
               { x, y, job: nft.job, railConstructedOn },
             ]);
           }
+          const nftFrozenTime = await tx.settings.findUnique({
+            where: { key: SETTINGS_KEY.NFT_LOCK_TIME },
+            select: { numValue: true },
+          });
+
+          if (!nftFrozenTime || !nftFrozenTime.numValue)
+            throw new BadRequestException(`NFT Frozen Time not set`);
+
+          const frozenTill = timestamp() + nftFrozenTime.numValue;
+
+          await tx.nft.update({
+            where: { id: nft.id },
+            data: { frozenTill },
+          });
+
+          eventParams.push([
+            { color, gameId },
+            {
+              x,
+              y,
+              job: nft.job,
+              message: "NFT_FROZEN",
+              frozenTill,
+            },
+          ]);
         }
-
-        const nftFrozenTime = await tx.settings.findUnique({
-          where: { key: SETTINGS_KEY.NFT_LOCK_TIME },
-          select: { numValue: true },
-        });
-
-        if (!nftFrozenTime || !nftFrozenTime.numValue)
-          throw new BadRequestException(`NFT Frozen Time not set`);
-
-        const frozenTill = timestamp() + nftFrozenTime.numValue;
-
-        await tx.nft.update({
-          where: { id: nft.id },
-          data: { frozenTill },
-        });
-
-        eventParams.push([
-          { color, gameId },
-          {
-            x,
-            y,
-            job: nft.job,
-            message: "NFT_FROZEN",
-            frozenTill,
-          },
-        ]);
 
         await tx.mapPosition.upsert({
           where: { x_y_gameId_color: { x, y, gameId, color } },

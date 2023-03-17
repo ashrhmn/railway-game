@@ -8,6 +8,7 @@ export enum SETTINGS_KEY {
   RAIL_ROAD_CONSTRUCTION_TIME = "RAIL_ROAD_CONSTRUCTION_TIME",
   NFT_LOCK_TIME = "NFT_LOCK_TIME",
   RAIL_MOVEMENT_LOCK_TIME = "RAIL_MOVEMENT_LOCK_TIME",
+  LIGHT_NFT_LOCKING_TIME = "LIGHT_NFT_LOCKING_TIME",
 }
 
 const prisma = new PrismaClient();
@@ -109,6 +110,13 @@ async function seedSettings() {
         title: "Rail Movement Lock Time",
         description:
           "Time in seconds to lock the movement of rail after each step",
+      },
+      {
+        key: SETTINGS_KEY.LIGHT_NFT_LOCKING_TIME,
+        valueType: "NUMBER",
+        numValue: 600, // 10 minutes
+        title: "Light NFT Locking Time",
+        description: "Time in seconds to lock the Light NFT for after use",
       },
     ],
   });
