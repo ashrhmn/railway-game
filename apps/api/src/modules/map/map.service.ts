@@ -18,7 +18,6 @@ import { ethers } from "ethers";
 import { Position } from "src/classes/Position";
 import { timestamp } from "src/utils/date.utils";
 import { SETTINGS_KEY } from "src/enums/settings-key.enum";
-import { getRandomNumber } from "src/utils/number.utils";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { SocketService } from "../socket/socket.service";
 
@@ -1262,28 +1261,28 @@ export class MapService {
         data: { level: { increment: 1 } },
         where: { gameId, color: color as COLOR },
       });
-      const nfts = await tx.nft.findMany({
-        where: { gameId },
-        select: { id: true },
-      });
+      // const nfts = await tx.nft.findMany({
+      //   where: { gameId },
+      //   select: { id: true },
+      // });
       // TODO: update BLKR values
-      (async () => {
-        for (const { id } of nfts) {
-          const job =
-            Object.keys(NFT_JOB)[
-              getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
-            ];
-          const color =
-            Object.keys(COLOR)[
-              getRandomNumber(0, Object.keys(COLOR).length - 1)
-            ];
-          if (!job || !color) throw new Error("Invalid random job or color");
-          await tx.nft.update({
-            where: { id },
-            data: { job: job as NFT_JOB, color: color as COLOR },
-          });
-        }
-      })();
+      // (async () => {
+      //   for (const { id } of nfts) {
+      //     const job =
+      //       Object.keys(NFT_JOB)[
+      //         getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
+      //       ];
+      //     const color =
+      //       Object.keys(COLOR)[
+      //         getRandomNumber(0, Object.keys(COLOR).length - 1)
+      //       ];
+      //     if (!job || !color) throw new Error("Invalid random job or color");
+      //     await tx.nft.update({
+      //       where: { id },
+      //       data: { job: job as NFT_JOB, color: color as COLOR },
+      //     });
+      //   }
+      // })();
     });
 
     this.emit(WS_EVENTS.GAME_FINISHED({ gameId }, { color }));
