@@ -7,6 +7,7 @@ import {
   COLOR,
   GAME_STATUS,
   MAP_ITEMS,
+  MAP_ITEM_VARIANT,
   NFT_JOB,
   RAIL_DIRECTION,
 } from "@prisma/client";
@@ -36,6 +37,17 @@ export class MapService {
   getMapItems = createService<typeof endpoints.map.getMapItems>(() => {
     return Object.keys(MAP_ITEMS);
   });
+
+  getMapItemVariants = createService<typeof endpoints.map.getMapItemVariants>(
+    ({ query: { mapItem } }) => {
+      if (!mapItem) return Object.keys(MAP_ITEM_VARIANT);
+      if (!Object.keys(MAP_ITEMS).includes(mapItem))
+        throw new BadRequestException(`Invalid map item ${mapItem}`);
+      return Object.keys(MAP_ITEM_VARIANT).filter((v) =>
+        v.startsWith(`${mapItem}_`),
+      );
+    },
+  );
 
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
     async ({ query: { skip, take, color, gameId } }, { user }) => {
@@ -68,47 +80,57 @@ export class MapService {
 
   assignItemToPosition = createAsyncService<
     typeof endpoints.map.assignItemToPosition
-  >(async ({ body: { color, gameId, x, y, mapItem, prePlaced } }) => {
-    if (!!mapItem && !!prePlaced)
-      throw new BadRequestException(
-        `Cannot assign both ${mapItem} and ${prePlaced} at same place`,
-      );
-    const payload = !!mapItem
-      ? { mapItem: MAP_ITEMS[mapItem], prePlaced: null }
-      : !!prePlaced
-      ? { prePlaced: NFT_JOB[prePlaced], mapItem: null }
-      : {};
+  >(
+    async ({
+      body: { color, gameId, x, y, mapItem, prePlaced, mapItemVariant },
+    }) => {
+      if (!!mapItem && !!prePlaced)
+        throw new BadRequestException(
+          `Cannot assign both ${mapItem} and ${prePlaced} at same place`,
+        );
+      const payload = !!mapItem
+        ? {
+            mapItem: MAP_ITEMS[mapItem],
+            prePlaced: null,
+            ...(!!mapItemVariant
+              ? { mapItemVariant: MAP_ITEM_VARIANT[mapItemVariant] }
+              : { mapItemVariant: null }),
+          }
+        : !!prePlaced
+        ? { prePlaced: NFT_JOB[prePlaced], mapItem: null, mapItemVariant: null }
+        : {};
 
-    if (!!payload.mapItem && payload.mapItem === MAP_ITEMS.MOUNTAIN) {
-      const count = await this.prisma.mapPosition.count({
-        where: {
+      if (!!payload.mapItem && payload.mapItem === MAP_ITEMS.MOUNTAIN) {
+        const count = await this.prisma.mapPosition.count({
+          where: {
+            x,
+            y,
+            color: COLOR[color],
+            gameId,
+            enemyId: { not: null },
+          },
+        });
+
+        if (count > 0) {
+          throw new BadRequestException(
+            `Cannot place ${mapItem} on enemy position`,
+          );
+        }
+      }
+      await this.prisma.mapPosition.upsert({
+        where: { x_y_gameId_color: { color: COLOR[color], gameId, x, y } },
+        create: {
+          color: COLOR[color],
           x,
           y,
-          color: COLOR[color],
           gameId,
-          enemyId: { not: null },
+          ...payload,
         },
+        update: { color: COLOR[color], x, y, gameId, ...payload },
       });
-
-      if (count > 0) {
-        throw new BadRequestException(
-          `Cannot place ${mapItem} on enemy position`,
-        );
-      }
-    }
-    await this.prisma.mapPosition.upsert({
-      where: { x_y_gameId_color: { color: COLOR[color], gameId, x, y } },
-      create: {
-        color: COLOR[color],
-        x,
-        y,
-        gameId,
-        ...payload,
-      },
-      update: { color: COLOR[color], x, y, gameId, ...payload },
-    });
-    return "success";
-  });
+      return "success";
+    },
+  );
 
   removeItem = createAsyncService<typeof endpoints.map.removeItem>(
     async ({ param: { id } }) => {

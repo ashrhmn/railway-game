@@ -39,6 +39,15 @@ export class MapController {
     );
   }
 
+  @InferMethod(endpoints.map.getMapItemVariants)
+  getMapItemVariants(@Context() context: IContext) {
+    return createController(
+      endpoints.map.getMapItemVariants,
+      context,
+      this.mapService.getMapItemVariants,
+    );
+  }
+
   // @Roles("ADMIN", "GAMEDEV")
   @InferMethod(endpoints.map.getPositions)
   getPositions(@Context() context: IContext) {

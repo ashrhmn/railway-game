@@ -1,10 +1,15 @@
+import service from "@/service";
+import { endpoints } from "api-interface";
+
+const getter = service(endpoints.map.getPositions);
+
 export const mapPositions = ({
   color,
   gameId,
 }: {
   color: string;
   gameId: string;
-}) =>
+}): Awaited<ReturnType<typeof getter>> =>
   Array(15)
     .fill(0)
     .map((_, i) =>
@@ -30,4 +35,8 @@ export const mapPositions = ({
       updatedAt: new Date(),
       enemy: null,
       isRevealed: false,
+      mapItemVariant: null,
+      bridgeConstructedOn: 0,
+      checkPointPassed: false,
+      railConstructedOn: 0,
     }));

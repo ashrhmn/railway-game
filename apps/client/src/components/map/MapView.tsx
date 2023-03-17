@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { endpoints, WS_EVENTS } from "api-interface";
 import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 import { z } from "zod";
 import ErrorView from "../common/ErrorView";
 import FullScreenSpinner from "../common/FullScreenSpinner";
@@ -31,8 +32,21 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
   const [selectedNftJob, setSelectedNftJob] = useState("NOT_SELECTED");
 
   const [selectedMapItem, setSelectedMapItem] = useState("NOT_SELECTED");
+  const [selectedMapItemVariant, setSelectedMapItemVariant] =
+    useState("NOT_SELECTED");
 
   const [assigning, setAssigning] = useState<"FIXED" | "ROAD">("FIXED");
+
+  const { data: mapItemVariants } = useQuery({
+    queryKey: ["map-item-variants", selectedMapItem],
+    queryFn: () => {
+      if (assigning === "ROAD" || selectedMapItem === "NOT_SELECTED")
+        return Promise.resolve([]);
+      return service(endpoints.map.getMapItemVariants)({
+        query: { mapItem: selectedMapItem },
+      });
+    },
+  });
 
   const {
     register,
@@ -94,7 +108,16 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
     );
   }, [positions, selectedPoint.x, selectedPoint.y]);
 
-  const handleAssign = () =>
+  const handleAssign = () => {
+    if (selectedPoint.x === -1 || selectedPoint.y === -1) return;
+    if (
+      !!mapItemVariants &&
+      mapItemVariants.length > 0 &&
+      selectedMapItemVariant === "NOT_SELECTED"
+    ) {
+      toast.error("Please select a variant");
+      return;
+    }
     promiseToast(
       service(endpoints.map.assignItemToPosition)({
         body: {
@@ -104,6 +127,11 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
           color,
           ...(selectedMapItem !== "NOT_SELECTED"
             ? { mapItem: selectedMapItem }
+            : {}),
+          ...(selectedMapItemVariant !== "NOT_SELECTED" &&
+          !!mapItemVariants &&
+          mapItemVariants.length > 0
+            ? { mapItemVariant: selectedMapItemVariant }
             : {}),
           ...(selectedNftJob !== "NOT_SELECTED"
             ? { prePlaced: selectedNftJob }
@@ -119,9 +147,9 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
         refetch();
         setSelectedNftJob("NOT_SELECTED");
         setSelectedMapItem("NOT_SELECTED");
-        // setSelectedPoint({ x: -1, y: -1 });
       })
       .catch(handleReqError);
+  };
 
   const handleRemove = () => {
     if (!selectedPointDetails) return;
@@ -271,7 +299,11 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   <h1>Enemy</h1>
                 </div>
                 <div>
-                  <h1>{selectedPointDetails?.mapItem || "None"}</h1>
+                  <h1>
+                    {selectedPointDetails?.mapItemVariant ||
+                      selectedPointDetails?.mapItem ||
+                      "None"}
+                  </h1>
                   <h1>{selectedPointDetails?.prePlaced || "None"}</h1>
                   <h1>
                     {!!selectedPointDetails?.enemy
@@ -346,25 +378,50 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
               <h1>(Preplaced) NFT</h1>
             </div>
             {assigning === "FIXED" && (
-              <div className="form-control mt-4">
-                <label className="label-text label">
-                  Select a Fixed Item to assign
-                </label>
-                <select
-                  value={selectedMapItem}
-                  onChange={(e) => setSelectedMapItem(e.target.value)}
-                  className="select-bordered select"
-                >
-                  <option disabled value="NOT_SELECTED">
-                    Select an item
-                  </option>
-                  {mapItems.map((mi) => (
-                    <option key={mi} value={mi}>
-                      {mi}
+              <>
+                <div className="form-control mt-4">
+                  <label className="label-text label">
+                    Select a Fixed Item to assign
+                  </label>
+                  <select
+                    value={selectedMapItem}
+                    onChange={(e) => setSelectedMapItem(e.target.value)}
+                    className="select-bordered select"
+                  >
+                    <option disabled value="NOT_SELECTED">
+                      Select an item
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {mapItems.map((mi) => (
+                      <option key={mi} value={mi}>
+                        {mi}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {!!mapItemVariants && mapItemVariants.length > 0 && (
+                  <div className="form-control mt-4">
+                    <label className="label-text label">
+                      Select a {selectedMapItem} variant
+                    </label>
+                    <select
+                      value={selectedMapItemVariant}
+                      onChange={(e) =>
+                        setSelectedMapItemVariant(e.target.value)
+                      }
+                      className="select-bordered select"
+                    >
+                      <option disabled value="NOT_SELECTED">
+                        Select an item
+                      </option>
+                      {mapItemVariants.map((mi) => (
+                        <option key={mi} value={mi}>
+                          {mi}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
             )}
             {assigning === "ROAD" && (
               <div className="form-control mt-4">
@@ -379,11 +436,13 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   <option disabled value="NOT_SELECTED">
                     Select an item
                   </option>
-                  {nftJobs.map((nj) => (
-                    <option key={nj} value={nj}>
-                      {nj}
-                    </option>
-                  ))}
+                  {nftJobs
+                    .filter((j) => j.startsWith("RAIL_"))
+                    .map((nj) => (
+                      <option key={nj} value={nj}>
+                        {nj}
+                      </option>
+                    ))}
                 </select>
               </div>
             )}

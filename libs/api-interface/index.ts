@@ -170,6 +170,14 @@ export const endpoints = {
       pattern: "map/nft-jobs",
       responseSchema: z.string().array(),
     },
+    getMapItemVariants: {
+      ...defaultConfig,
+      pattern: "map/map-item-variants",
+      responseSchema: z.string().array(),
+      querySchema: z.object({
+        mapItem: z.string().optional(),
+      }),
+    },
     getPositions: {
       ...defaultConfig,
       pattern: "map/positions",
@@ -216,6 +224,7 @@ export const endpoints = {
         y: z.number().min(0).max(14),
         color: z.string(),
         mapItem: z.string().optional(),
+        mapItemVariant: z.string().optional(),
         prePlaced: z.string().optional(),
         gameId: z.string(),
       }),
