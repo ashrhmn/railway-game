@@ -9,6 +9,7 @@ COPY apps/client/package.json /app/apps/client/
 COPY libs/api-interface/package.json /app/libs/api-interface/
 RUN yarn install --frozen-lockfile
 COPY . .
+RUN yarn api prisma generate
 RUN yarn build
 
 FROM node:16-alpine
