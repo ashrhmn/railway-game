@@ -1,5 +1,6 @@
 import service from "@/service";
 import { endpoints } from "api-interface";
+import { COLOR } from "@prisma/client";
 
 const getter = service(endpoints.map.getPositions);
 
@@ -7,7 +8,7 @@ export const mapPositions = ({
   color,
   gameId,
 }: {
-  color: string;
+  color: COLOR;
   gameId: string;
 }): Awaited<ReturnType<typeof getter>> =>
   Array(15)

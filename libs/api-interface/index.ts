@@ -1,5 +1,12 @@
 import { ZodType, z } from "zod";
 import { getAddress } from "ethers/lib/utils";
+import {
+  MAP_ITEMS,
+  COLOR,
+  NFT_JOB,
+  MAP_ITEM_VARIANT,
+  ROLE,
+} from "@prisma/client";
 
 const defaultConfig = {
   paramSchema: z.object({}),
@@ -93,7 +100,7 @@ export const endpoints = {
       pattern: "auth/current-user",
       responseSchema: z.object({
         username: z.string(),
-        roles: z.array(z.string()),
+        roles: z.array(z.nativeEnum(ROLE)),
       }),
     },
     logout: {
@@ -158,24 +165,24 @@ export const endpoints = {
     getColors: {
       ...defaultConfig,
       pattern: "map/colors",
-      responseSchema: z.string().array(),
+      responseSchema: z.nativeEnum(COLOR).array(),
     },
     getMapItems: {
       ...defaultConfig,
       pattern: "map/items",
-      responseSchema: z.string().array(),
+      responseSchema: z.nativeEnum(MAP_ITEMS).array(),
     },
     getNftJobs: {
       ...defaultConfig,
       pattern: "map/nft-jobs",
-      responseSchema: z.string().array(),
+      responseSchema: z.nativeEnum(NFT_JOB).array(),
     },
     getMapItemVariants: {
       ...defaultConfig,
       pattern: "map/map-item-variants",
-      responseSchema: z.string().array(),
+      responseSchema: z.nativeEnum(MAP_ITEM_VARIANT).array(),
       querySchema: z.object({
-        mapItem: z.string().optional(),
+        mapItem: z.nativeEnum(MAP_ITEMS).optional(),
       }),
     },
     getPositions: {
@@ -186,7 +193,7 @@ export const endpoints = {
           id: z.string(),
           x: z.number().min(0).max(14),
           y: z.number().min(0).max(14),
-          color: z.string(),
+          color: z.nativeEnum(COLOR),
           mapItem: z.string().nullable(),
           mapItemVariant: z.string().nullable(),
           prePlaced: z.string().nullable(),

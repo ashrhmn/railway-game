@@ -53,7 +53,7 @@ const Map: NextPage<Props> = ({
         games={games}
         selectedColor={selectedColor}
         selectedGameId={selectedGameId}
-        setSelectedColor={setSelectedColor}
+        setSelectedColor={setSelectedColor as any}
         setSelectedGameId={setSelectedGameId}
       />
       {!!selectedColor && !!selectedGameId && (

@@ -13,13 +13,14 @@ import toast from "react-hot-toast";
 import { z } from "zod";
 import ErrorView from "../common/ErrorView";
 import FullScreenSpinner from "../common/FullScreenSpinner";
+import { COLOR, ROLE, MAP_ITEMS } from "@prisma/client";
 
 type Props = {
-  color: string;
+  color: COLOR;
   gameId: string;
   nftJobs: Awaited<ReturnType<typeof getNftJobs>>;
   mapItems: Awaited<ReturnType<typeof getMapItems>>;
-  roles: string[];
+  roles: ROLE[];
 };
 const directionSchema = endpoints.map.expandEnemySize.bodySchema.pick({
   direction: true,
@@ -31,7 +32,9 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
   const [selectedPoint, setSelectedPoint] = useState({ x: -1, y: -1 });
   const [selectedNftJob, setSelectedNftJob] = useState("NOT_SELECTED");
 
-  const [selectedMapItem, setSelectedMapItem] = useState("NOT_SELECTED");
+  const [selectedMapItem, setSelectedMapItem] = useState<
+    MAP_ITEMS | "NOT_SELECTED"
+  >("NOT_SELECTED");
   const [selectedMapItemVariant, setSelectedMapItemVariant] =
     useState("NOT_SELECTED");
 
@@ -385,7 +388,9 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   </label>
                   <select
                     value={selectedMapItem}
-                    onChange={(e) => setSelectedMapItem(e.target.value)}
+                    onChange={(e) =>
+                      setSelectedMapItem(e.target.value as MAP_ITEMS)
+                    }
                     className="select-bordered select"
                   >
                     <option disabled value="NOT_SELECTED">

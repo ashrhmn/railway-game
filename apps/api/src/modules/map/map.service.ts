@@ -29,21 +29,21 @@ export class MapService {
     private readonly socketService: SocketService,
   ) {}
   getColors = createService<typeof endpoints.map.getColors>(() => {
-    return Object.keys(COLOR);
+    return Object.values(COLOR);
   });
   getNftJobs = createService<typeof endpoints.map.getNftJobs>(() => {
-    return Object.keys(NFT_JOB);
+    return Object.values(NFT_JOB);
   });
   getMapItems = createService<typeof endpoints.map.getMapItems>(() => {
-    return Object.keys(MAP_ITEMS);
+    return Object.values(MAP_ITEMS);
   });
 
   getMapItemVariants = createService<typeof endpoints.map.getMapItemVariants>(
     ({ query: { mapItem } }) => {
-      if (!mapItem) return Object.keys(MAP_ITEM_VARIANT);
+      if (!mapItem) return Object.values(MAP_ITEM_VARIANT);
       if (!Object.keys(MAP_ITEMS).includes(mapItem))
         throw new BadRequestException(`Invalid map item ${mapItem}`);
-      return Object.keys(MAP_ITEM_VARIANT).filter((v) =>
+      return Object.values(MAP_ITEM_VARIANT).filter((v) =>
         v.startsWith(`${mapItem}_`),
       );
     },
