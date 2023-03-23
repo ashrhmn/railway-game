@@ -123,8 +123,8 @@ async function seedSettings() {
 }
 
 async function main() {
-  seedUser();
-  seedSettings();
+  await seedUser();
+  await seedSettings();
   // const game1 = await prisma.game.create({
   //   data: { name: "game1", status: "WAITING" },
   // });
