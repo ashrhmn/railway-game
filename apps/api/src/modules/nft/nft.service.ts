@@ -71,7 +71,12 @@ export class NftService {
           abilityB,
         },
       });
-      return { data: nfts, count };
+      const unfilteredCount = await this.prisma.nft.count({
+        where: {
+          gameId,
+        },
+      });
+      return { data: nfts, count, unfilteredCount };
     },
   );
 
@@ -300,6 +305,68 @@ export class NftService {
       });
     }
   }
+
+  updateNftsByPercentage = createAsyncService<
+    typeof endpoints.nft.updateNftsByPercentage
+  >(async ({ body: { jobs, gameId } }) => {
+    if (jobs.reduce((prev, curr) => prev + curr.percentage, 0) !== 100)
+      throw new BadRequestException("Percentages total must be 100");
+    const res = await this.prisma.$transaction(
+      async (tx) => {
+        await tx.nft.updateMany({ data: { flag: false }, where: {} });
+        await tx.nft.updateMany({ data: { flag: true }, where: { gameId } });
+        const total = await tx.nft.count({ where: { gameId } });
+        for (const { percentage, job } of jobs) {
+          // console.log({
+          //   job,
+          //   percentage,
+          //   remainder:
+          //     (percentage * total) % (100 * Object.values(COLOR).length),
+          //   left: percentage * total,
+          //   right: 100 * Object.values(COLOR).length,
+          // });
+          // console.log((percentage * total) % (100 * Object.values(COLOR).length));
+          if (!!((percentage * total) % (100 * Object.values(COLOR).length)))
+            throw new BadRequestException(
+              `Total number of nfts per color must be a rounded number, Error on ${job}`,
+            );
+          const limit = (percentage / 100) * total;
+          // console.log({ limit });
+          const unknownIds =
+            await tx.$queryRaw`SELECT id FROM public.nfts WHERE game_id = ${gameId} AND flag = true ORDER BY RANDOM() LIMIT ${limit}`;
+          const ids = z
+            .object({ id: z.string().cuid() })
+            .array()
+            .parse(unknownIds)
+            .map(({ id }) => id);
+
+          if (ids.length === 0) continue;
+
+          // console.log(ids.length);
+
+          for (const [index, color] of Object.values(COLOR).entries()) {
+            await tx.nft.updateMany({
+              where: {
+                id: {
+                  in: ids.filter(
+                    (_, i) =>
+                      i >= (ids.length / Object.values(COLOR).length) * index &&
+                      i <
+                        (ids.length / Object.values(COLOR).length) *
+                          (index + 1),
+                  ),
+                },
+              },
+              data: { job, color, flag: false },
+            });
+          }
+        }
+        return "Updated";
+      },
+      { maxWait: 999999999999999, timeout: 999999999999999 },
+    );
+    return res;
+  });
 
   emit({ event, payload }: { event: string; payload?: any }) {
     this.socketService.socket?.emit(event, payload);

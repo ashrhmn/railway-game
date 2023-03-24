@@ -124,6 +124,7 @@ export const endpoints = {
       responseSchema: z.object({
         data: NFTResponseSchema.array(),
         count: z.number(),
+        unfilteredCount: z.number(),
       }),
       querySchema: SkipTakeSchema.and(
         z.object({
@@ -158,6 +159,21 @@ export const endpoints = {
       responseSchema: z.string(),
       bodySchema: z.object({
         gameId: z.string(),
+      }),
+    },
+    updateNftsByPercentage: {
+      ...defaultConfig,
+      pattern: "nfts/update-by-percentage",
+      method: "POST",
+      responseSchema: z.string(),
+      bodySchema: z.object({
+        gameId: z.string(),
+        jobs: z
+          .object({
+            job: z.nativeEnum(NFT_JOB),
+            percentage: z.number(),
+          })
+          .array(),
       }),
     },
   },

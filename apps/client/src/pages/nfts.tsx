@@ -13,7 +13,8 @@ import { endpoints } from "api-interface";
 import axios from "axios";
 import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { NFT_JOB, COLOR } from "@prisma/client";
 
 type Props = {
   colors: Awaited<ReturnType<typeof getColors>>;
@@ -104,6 +105,84 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
   };
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [percentageValuesForJobs, setPercentageValuesForJobs] = useState<
+    Record<NFT_JOB, string>
+  >({
+    BRIDGE: "0",
+    KNIGHT: "0",
+    LIGHT: "0",
+    RAIL_2_4: "0",
+    RAIL_2_4_6_8: "0",
+    RAIL_2_6: "0",
+    RAIL_2_8: "0",
+    RAIL_4_6: "0",
+    RAIL_4_8: "0",
+    RAIL_6_8: "0",
+  });
+
+  const totalPercentageOfUpdatingNftJobs = useMemo(
+    () =>
+      Object.values(percentageValuesForJobs).reduce(
+        (prev, curr) => prev + +curr,
+        0
+      ),
+    [percentageValuesForJobs]
+  );
+
+  const updateNftJobErrorText = useCallback(
+    (job: NFT_JOB) => {
+      if (!percentageValuesForJobs[job] || isNaN(+percentageValuesForJobs[job]))
+        return "Invalid Percentage Value";
+
+      if (
+        (+percentageValuesForJobs[job] * (data?.unfilteredCount || 0)) / 100 !==
+        Math.floor(
+          (+percentageValuesForJobs[job] * (data?.unfilteredCount || 0)) / 100
+        )
+      )
+        return "Invalid Percentage, NFT count must be rounded";
+
+      if (
+        (+percentageValuesForJobs[job] * (data?.unfilteredCount || 0)) / 100 >
+        (data?.unfilteredCount || 0)
+      )
+        return "Max percentage is 100%";
+
+      if (
+        (+percentageValuesForJobs[job] * (data?.unfilteredCount || 0)) /
+          100 /
+          Object.values(COLOR).length !==
+        Math.floor(
+          (+percentageValuesForJobs[job] * (data?.unfilteredCount || 0)) /
+            100 /
+            Object.values(COLOR).length
+        )
+      )
+        return "Number of per color NFTs must be rounded";
+    },
+    [data?.unfilteredCount, percentageValuesForJobs]
+  );
+
+  const handleUpdateNftJobs = async () => {
+    try {
+      if (!selectedGameId) throw "No game selected";
+      const jobs = Object.values(NFT_JOB)
+        .map((job) => ({
+          job,
+          percentage: +percentageValuesForJobs[job],
+        }))
+        .filter((job) => job.percentage > 0);
+
+      await promiseToast(
+        service(endpoints.nft.updateNftsByPercentage)({
+          body: { jobs, gameId: selectedGameId },
+        }).then(() => refetch()),
+        { loading: "Updating...", success: "Updated" }
+      );
+    } catch (error) {
+      handleReqError(error);
+    }
+  };
 
   return (
     <>
@@ -127,87 +206,171 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
         setSelectedGameId={setSelectedGameId}
         colorAllOption
       />
-      <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
-        <button
-          onClick={() => setShowAddForm((v) => !v)}
-          className="btn-outline btn btn-accent"
-        >
-          Add
-        </button>
-
-        <label htmlFor="delete-modal" className="btn btn-error">
-          Delete
-        </label>
-        <button onClick={handleRandomizeTokenId} className="btn">
-          Randomize Token ID
-        </button>
-        <button onClick={handleRefreshOwners} className="btn">
-          Refresh Owners
-        </button>
-        <input type="checkbox" id="delete-modal" className="modal-toggle" />
-        <label htmlFor="delete-modal" className="modal cursor-pointer">
-          <label className="modal-box relative" htmlFor="">
-            <h3 className="text-lg font-bold">
-              Are you sure you want to delete all nfts from{" "}
-              {games?.find((g) => g.id === selectedGameId)?.name ||
-                selectedGameId}
-              ?
-            </h3>
-            <div className="modal-action">
-              <label
-                onClick={handleDeleteNfts}
-                htmlFor="delete-modal"
-                className="btn btn-warning"
-              >
-                Confirm
-              </label>
+      <div className="flex flex-col lg:flex-row">
+        <div className="min-w-[40rem] overflow-x-auto">
+          <details>
+            <summary className="text-lg font-bold">Update NFT Jobs</summary>
+            <div>
+              {Object.values(NFT_JOB).map((job) => (
+                <div
+                  className={clx(
+                    "p-1",
+                    !!updateNftJobErrorText(job) &&
+                      "rounded-xl border-[0.5px] border-error"
+                  )}
+                  key={job}
+                >
+                  <div
+                    className={clx("my-0.5 flex items-center gap-3")}
+                    key={job}
+                  >
+                    <span className="w-28">{job}</span>
+                    <div>
+                      <label className="input-group">
+                        <input
+                          className="input-bordered input input-xs w-16"
+                          type="text"
+                          value={percentageValuesForJobs[job]}
+                          onChange={(e) =>
+                            setPercentageValuesForJobs((v) => ({
+                              ...v,
+                              [job]: e.target.value,
+                            }))
+                          }
+                        />
+                        <span>%</span>
+                      </label>
+                    </div>
+                    <span>
+                      {
+                        +(
+                          (+percentageValuesForJobs[job] *
+                            (data?.unfilteredCount || 0)) /
+                            100 || 0
+                        ).toFixed(4)
+                      }{" "}
+                      NFTs (
+                      {
+                        +(
+                          (+percentageValuesForJobs[job] *
+                            (data?.unfilteredCount || 0)) /
+                            100 /
+                            Object.values(COLOR).length || 0
+                        ).toFixed(4)
+                      }{" "}
+                      per color )
+                    </span>
+                  </div>
+                  {!!updateNftJobErrorText(job) && (
+                    <span className="error text-xs text-error">
+                      {updateNftJobErrorText(job)}
+                    </span>
+                  )}
+                </div>
+              ))}
+              <div className="mt-2 flex justify-center gap-4">
+                <span>
+                  Percentage Total : {totalPercentageOfUpdatingNftJobs}
+                </span>
+                <button
+                  disabled={totalPercentageOfUpdatingNftJobs !== 100}
+                  onClick={handleUpdateNftJobs}
+                  className="btn btn-accent btn-sm"
+                >
+                  Update
+                </button>
+              </div>
             </div>
-          </label>
-        </label>
-      </div>
+          </details>
+        </div>
+        <div className="w-full">
+          <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
+            <button
+              onClick={() => setShowAddForm((v) => !v)}
+              className="btn-outline btn btn-accent"
+            >
+              Add
+            </button>
 
-      <div className="btn-group mt-8 flex flex-wrap items-center justify-end">
-        {selectedPage > 5 && (
-          <button className="btn" onClick={() => setSelectedPage(1)}>
-            First
-          </button>
-        )}
-        {Array(Math.ceil((data?.count || 0) / itemsPerPage))
-          .fill(0)
-          .map((_, i) =>
-            Math.abs(selectedPage - i) <= 5 ? (
-              <button
-                className={clx("btn", selectedPage - 1 === i && "btn-active")}
-                key={i}
-                onClick={() => setSelectedPage(i + 1)}
-              >
-                {i + 1}
+            <label htmlFor="delete-modal" className="btn btn-error">
+              Delete
+            </label>
+            <button onClick={handleRandomizeTokenId} className="btn">
+              Randomize Token ID
+            </button>
+            <button onClick={handleRefreshOwners} className="btn">
+              Refresh Owners
+            </button>
+            <input type="checkbox" id="delete-modal" className="modal-toggle" />
+            <label htmlFor="delete-modal" className="modal cursor-pointer">
+              <label className="modal-box relative" htmlFor="">
+                <h3 className="text-lg font-bold">
+                  Are you sure you want to delete all nfts from{" "}
+                  {games?.find((g) => g.id === selectedGameId)?.name ||
+                    selectedGameId}
+                  ?
+                </h3>
+                <div className="modal-action">
+                  <label
+                    onClick={handleDeleteNfts}
+                    htmlFor="delete-modal"
+                    className="btn btn-warning"
+                  >
+                    Confirm
+                  </label>
+                </div>
+              </label>
+            </label>
+          </div>
+
+          <div className="btn-group mt-8 flex flex-wrap items-center justify-end">
+            {selectedPage > 5 && (
+              <button className="btn" onClick={() => setSelectedPage(1)}>
+                First
               </button>
-            ) : null
-          )}
-        {selectedPage < Math.ceil((data?.count || 0) / itemsPerPage) - 6 && (
-          <button
-            className="btn"
-            onClick={() =>
-              setSelectedPage(Math.ceil((data?.count || 0) / itemsPerPage))
-            }
-          >
-            Last
-          </button>
-        )}
-      </div>
-      <div className="mt-4 flex justify-end">
-        <label className="input-group w-72">
-          <span>Items Per Page</span>
-          <input
-            value={itemsPerPage}
-            onChange={(e) =>
-              setItemsPerPage(Math.max(e.target.valueAsNumber || 25, 25))
-            }
-            className="input-bordered input w-28"
-            type="number"
-          />
-        </label>
+            )}
+            {Array(Math.ceil((data?.count || 0) / itemsPerPage))
+              .fill(0)
+              .map((_, i) =>
+                Math.abs(selectedPage - i) <= 5 ? (
+                  <button
+                    className={clx(
+                      "btn",
+                      selectedPage - 1 === i && "btn-active"
+                    )}
+                    key={i}
+                    onClick={() => setSelectedPage(i + 1)}
+                  >
+                    {i + 1}
+                  </button>
+                ) : null
+              )}
+            {selectedPage <
+              Math.ceil((data?.count || 0) / itemsPerPage) - 6 && (
+              <button
+                className="btn"
+                onClick={() =>
+                  setSelectedPage(Math.ceil((data?.count || 0) / itemsPerPage))
+                }
+              >
+                Last
+              </button>
+            )}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <label className="input-group w-72">
+              <span>Items Per Page</span>
+              <input
+                value={itemsPerPage}
+                onChange={(e) =>
+                  setItemsPerPage(Math.max(e.target.valueAsNumber || 25, 25))
+                }
+                className="input-bordered input w-28"
+                type="number"
+              />
+            </label>
+          </div>
+        </div>
       </div>
       <h1 className="text-xs">Total : {data?.count}</h1>
       <div className="relative mt-5 h-[60vh] overflow-x-auto rounded-xl border-2 border-base-300">

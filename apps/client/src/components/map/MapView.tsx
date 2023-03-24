@@ -276,7 +276,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
               </h1>
               <button
                 onClick={() => setSelectedPoint({ x: -1, y: -1 })}
-                className="badge-accent badge"
+                className="badge badge-accent"
               >
                 Reset Selection
               </button>
@@ -289,7 +289,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   !!selectedPointDetails?.prePlaced) && (
                   <button
                     onClick={handleRemove}
-                    className="badge-warning badge"
+                    className="badge badge-warning"
                   >
                     Remove
                   </button>
@@ -459,7 +459,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 (selectedMapItem === "NOT_SELECTED" &&
                   selectedNftJob === "NOT_SELECTED")
               }
-              className={clx("btn-accent btn mt-4")}
+              className={clx("btn btn-accent mt-4")}
             >
               Assign
             </button>
@@ -502,7 +502,7 @@ const DirectionButton = ({
 }: {
   direction: z.infer<typeof directionSchema>["direction"];
   expandEnemy: (
-    direction: z.infer<typeof directionSchema>["direction"]
+    _direction: z.infer<typeof directionSchema>["direction"]
   ) => void;
 }) => (
   <div

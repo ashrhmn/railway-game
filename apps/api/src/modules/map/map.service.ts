@@ -928,13 +928,13 @@ export class MapService {
     }
 
     if (!nextMapPosition.nft) {
-      console.log(
-        `No nft placed forward, rail stays on the same position ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
-      );
+      // console.log(
+      //   `No nft placed forward, rail stays on the same position ${JSON.stringify(
+      //     { gameId, color },
+      //     null,
+      //     2,
+      //   )}`,
+      // );
       return;
     }
 

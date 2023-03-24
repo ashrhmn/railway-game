@@ -76,6 +76,7 @@ model Nft {
   game         Game          @relation(fields: [gameId], references: [id])
   gameId       String        @map("game_id")
   mapPositions MapPosition[]
+  flag         Boolean       @default(false)
 
   @@unique([tokenId, gameId])
   @@map("nfts")

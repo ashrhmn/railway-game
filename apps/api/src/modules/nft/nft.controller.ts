@@ -56,6 +56,15 @@ export class NftController {
     );
   }
 
+  @InferMethod(endpoints.nft.updateNftsByPercentage)
+  updateNftsByPercentage(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.nft.updateNftsByPercentage,
+      context,
+      this.nftService.updateNftsByPercentage,
+    );
+  }
+
   @Roles("ADMIN")
   @UseInterceptors(FileInterceptor("file"))
   @Post("nfts/add-csv")
