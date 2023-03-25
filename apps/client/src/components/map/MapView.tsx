@@ -85,6 +85,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       service(endpoints.game.getCurrentRailPosition)({
         query: { color, gameId },
       }),
+    keepPreviousData: true,
   });
 
   const { data, status, refetch, error } = useQuery({
@@ -94,6 +95,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
         query: { color, gameId, take: 1000 },
       }),
     retry: 0,
+    keepPreviousData: true,
   });
   const positions = useMemo(() => {
     const def = mapPositions({ color, gameId });

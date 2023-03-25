@@ -15,6 +15,7 @@ import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
 import React, { useCallback, useMemo, useState } from "react";
 import { NFT_JOB, COLOR } from "@prisma/client";
+import useDebounce from "@/hooks/useDebounce";
 
 type Props = {
   colors: Awaited<ReturnType<typeof getColors>>;
@@ -43,26 +44,31 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
 
   const [itemsPerPage, setItemsPerPage] = useState(25);
 
+  const [itemsPerPageDelayed, setItemsPerPageDelayed] = useState(25);
+
+  useDebounce(() => setItemsPerPageDelayed(itemsPerPage), 700, [itemsPerPage]);
+
   const { data, refetch } = useQuery({
     queryKey: [
       "nfts",
       selectedColor || "all",
       selectedGameId || "all",
       selectedPage.toString(),
-      itemsPerPage.toString(),
+      itemsPerPageDelayed.toString(),
     ],
     queryFn: useCallback(
       () =>
         service(endpoints.nft.getAllNfts)({
           query: {
-            take: itemsPerPage,
-            skip: (selectedPage - 1) * itemsPerPage,
+            take: itemsPerPageDelayed,
+            skip: (selectedPage - 1) * itemsPerPageDelayed,
             gameId: selectedGameId,
             color: selectedColor,
           },
         }),
-      [itemsPerPage, selectedColor, selectedGameId, selectedPage]
+      [itemsPerPageDelayed, selectedColor, selectedGameId, selectedPage]
     ),
+    keepPreviousData: true,
   });
 
   const handleDeleteNfts = useCallback(() => {
@@ -329,7 +335,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                 First
               </button>
             )}
-            {Array(Math.ceil((data?.count || 0) / itemsPerPage))
+            {Array(Math.ceil((data?.count || 0) / itemsPerPageDelayed))
               .fill(0)
               .map((_, i) =>
                 Math.abs(selectedPage - i) <= 5 ? (
@@ -346,11 +352,13 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                 ) : null
               )}
             {selectedPage <
-              Math.ceil((data?.count || 0) / itemsPerPage) - 6 && (
+              Math.ceil((data?.count || 0) / itemsPerPageDelayed) - 6 && (
               <button
                 className="btn"
                 onClick={() =>
-                  setSelectedPage(Math.ceil((data?.count || 0) / itemsPerPage))
+                  setSelectedPage(
+                    Math.ceil((data?.count || 0) / itemsPerPageDelayed)
+                  )
                 }
               >
                 Last
