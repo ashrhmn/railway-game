@@ -302,6 +302,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   <h1>Fixed Item</h1>
                   <h1>(Preplaced) NFT</h1>
                   <h1>Enemy</h1>
+                  <h1>Player Assigned</h1>
                 </div>
                 <div>
                   <h1>
@@ -315,6 +316,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                       ? `${selectedPointDetails.enemy.name} (Strength : ${selectedPointDetails.enemy.currentStrength}/${selectedPointDetails.enemy.strength})`
                       : "None"}
                   </h1>
+                  <h1>{selectedPointDetails?.nft?.job || "None"}</h1>
                 </div>
               </div>
             </div>
