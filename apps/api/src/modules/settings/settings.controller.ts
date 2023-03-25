@@ -29,4 +29,13 @@ export class SettingsController {
       this.settingsService.update,
     );
   }
+
+  @InferMethod(endpoints.settings.getAllAbilityScoreMappings)
+  getAllAbilityScoreMappings(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.settings.getAllAbilityScoreMappings,
+      context,
+      this.settingsService.getAllAbilityScoreMappings,
+    );
+  }
 }

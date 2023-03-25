@@ -489,6 +489,24 @@ export const endpoints = {
       paramSchema: z.object({ key: z.string() }),
       responseSchema: z.string(),
     },
+    getAllAbilityScoreMappings: {
+      ...defaultConfig,
+      pattern: "settings/ability-score-mappings",
+      responseSchema: z
+        .object({
+          id: z.string(),
+          level: z.number(),
+          abilityB_Min: z.number(),
+          abilityB_Max: z.number(),
+          abilityL_Min: z.number(),
+          abilityL_Max: z.number(),
+          abilityK_Min: z.number(),
+          abilityK_Max: z.number(),
+          abilityR_Min: z.number(),
+          abilityR_Max: z.number(),
+        })
+        .array(),
+    },
   },
 } as const;
 

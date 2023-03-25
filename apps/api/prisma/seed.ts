@@ -36,33 +36,28 @@ async function seedUser() {
   });
 }
 
-async function seedNft(gameId: string) {
+async function seedNft(gameId: string, nftCount = 2000) {
   const args: Prisma.NftCreateManyArgs = {
-    data: Array(10)
+    data: Array(nftCount)
       .fill(0)
       .map((_, i) => ({
         name: `NFT ${i + 1} ${gameId}`,
         description: `NFT ${i + 1} description ${gameId}`,
-        owner: "0x4A7D933678676fa5F1d8dE3B6A0bBa9460fC1BdE",
+        // owner: "0x4A7D933678676fa5F1d8dE3B6A0bBa9460fC1BdE",
         image: `https://picsum.photos/300/300?random=${i + 1}`,
         job: NFT_JOB[
           Object.keys(NFT_JOB)[
             Math.round(Math.random() * 100 * i) % Object.keys(NFT_JOB).length
           ]
         ],
-        color:
-          COLOR[
-            Object.keys(COLOR)[
-              Math.round(Math.random() * 100 * i) % Object.keys(COLOR).length
-            ]
-          ],
+        color: COLOR[Object.keys(COLOR)[i % Object.keys(COLOR).length]],
         gameId,
-        abilityB: Math.round(Math.random() * 4),
-        abilityK: Math.round(Math.random() * 4),
-        abilityL: Math.round(Math.random() * 4),
-        abilityR: Math.round(Math.random() * 4),
+        abilityB: 1,
+        abilityK: 1,
+        abilityL: 1,
+        abilityR: 1,
         frozenTill: 0,
-        level: Math.round(Math.random() * 4),
+        level: 1,
         metadata: [
           {
             type: "type1",
@@ -184,18 +179,35 @@ async function seedAbilityScoresMapping() {
   });
 }
 
+async function seedGame({
+  name,
+  nftCount,
+}: {
+  name: string;
+  nftCount: number;
+}) {
+  const game = await prisma.game.create({
+    data: { name, status: "WAITING" },
+  });
+  await prisma.railPosition.createMany({
+    data: Object.values(COLOR).map((color) => ({
+      color,
+      direction: "LEFT",
+      gameId: game.id,
+      x: 14,
+      y: 14,
+    })),
+    skipDuplicates: true,
+  });
+  await seedNft(game.id, nftCount);
+}
+
 async function main() {
   await seedUser();
   await seedSettings();
   await seedAbilityScoresMapping();
-  // const game1 = await prisma.game.create({
-  //   data: { name: "game1", status: "WAITING" },
-  // });
-  // const game2 = await prisma.game.create({
-  //   data: { name: "game2", status: "WAITING" },
-  // });
-  // seedNft(game1.id);
-  // seedNft(game2.id);
+  await seedGame({ name: "game1", nftCount: 2000 });
+  await seedGame({ name: "game2", nftCount: 1000 });
 }
 main()
   .then(async () => {

@@ -39,4 +39,10 @@ export class SettingsService {
       return "updated";
     },
   );
+
+  getAllAbilityScoreMappings = createAsyncService<
+    typeof endpoints.settings.getAllAbilityScoreMappings
+  >(async () => {
+    return await this.prisma.abilityScoreMapping.findMany();
+  });
 }

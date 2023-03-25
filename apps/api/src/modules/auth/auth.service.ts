@@ -46,8 +46,8 @@ export class AuthService {
     },
   );
 
-  currentUser = createAsyncService<typeof endpoints.auth.currentUser>(
-    async (_, { user }) => {
+  currentUser = createService<typeof endpoints.auth.currentUser>(
+    (_, { user }) => {
       if (!!user) return user;
       // throw new UnauthorizedException();
       throw new HttpException("message", 401);
