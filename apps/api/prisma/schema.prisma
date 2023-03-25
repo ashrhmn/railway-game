@@ -226,3 +226,20 @@ model MapActivity {
 
   @@map("map_activities")
 }
+
+model AbilityScoreMapping {
+  id           String   @id @default(cuid())
+  level        Int
+  abilityR_Min Int      @map("ability_r_min")
+  abilityR_Max Int      @map("ability_r_max")
+  abilityB_Min Int      @map("ability_b_min")
+  abilityB_Max Int      @map("ability_b_max")
+  abilityL_Min Int      @map("ability_l_min")
+  abilityL_Max Int      @map("ability_l_max")
+  abilityK_Min Int      @map("ability_k_min")
+  abilityK_Max Int      @map("ability_k_max")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("ability_score_mappings")
+}

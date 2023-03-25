@@ -1302,28 +1302,29 @@ export class MapService {
         data: { level: { increment: 1 } },
         where: { gameId, color: color as COLOR },
       });
-      // const nfts = await tx.nft.findMany({
-      //   where: { gameId },
-      //   select: { id: true },
-      // });
-      // TODO: update BLKR values
-      // (async () => {
-      //   for (const { id } of nfts) {
-      //     const job =
-      //       Object.keys(NFT_JOB)[
-      //         getRandomNumber(0, Object.keys(NFT_JOB).length - 1)
-      //       ];
-      //     const color =
-      //       Object.keys(COLOR)[
-      //         getRandomNumber(0, Object.keys(COLOR).length - 1)
-      //       ];
-      //     if (!job || !color) throw new Error("Invalid random job or color");
-      //     await tx.nft.update({
-      //       where: { id },
-      //       data: { job: job as NFT_JOB, color: color as COLOR },
-      //     });
-      //   }
-      // })();
+      await tx.$queryRaw`
+        UPDATE
+          nfts AS nft
+        SET
+          ability_b = random_between(
+            asm.ability_b_min, asm.ability_b_max
+          ),
+          ability_l = random_between(
+            asm.ability_l_min, asm.ability_l_max
+          ),
+          ability_k = random_between(
+            asm.ability_k_min, asm.ability_k_max
+          ),
+          ability_r = random_between(
+            asm.ability_r_min, asm.ability_r_max
+          )
+        FROM
+          ability_score_mappings AS asm
+        WHERE
+          nft."level" = asm.level
+          AND nft.game_id = '${gameId}'
+          AND nft.color = '${color}';
+      `;
     });
 
     this.emit(WS_EVENTS.GAME_FINISHED({ gameId }, { color }));

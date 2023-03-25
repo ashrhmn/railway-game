@@ -85,28 +85,28 @@ async function seedSettings() {
       {
         key: SETTINGS_KEY.BRIDGE_CONSTRUCTION_TIME,
         valueType: "NUMBER",
-        numValue: 600, // 10 minutes
+        numValue: 60, // 1 minutes
         title: "Bridge Construction Time",
         description: "Time in seconds to construct a bridge",
       },
       {
         key: SETTINGS_KEY.NFT_LOCK_TIME,
         valueType: "NUMBER",
-        numValue: 600, // 10 minutes
+        numValue: 60, // 1 minutes
         title: "NFT Locking Time",
         description: "Time in seconds to lock an NFT for after use",
       },
       {
         key: SETTINGS_KEY.RAIL_ROAD_CONSTRUCTION_TIME,
         valueType: "NUMBER",
-        numValue: 600, // 10 minutes
+        numValue: 60, // 1 minutes
         title: "Rail Road Construction Time",
         description: "Time in seconds to construct a rail road",
       },
       {
         key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME,
         valueType: "NUMBER",
-        numValue: 600, // 10 minutes
+        numValue: 60, // 1 minutes
         title: "Rail Movement Lock Time",
         description:
           "Time in seconds to lock the movement of rail after each step",
@@ -114,9 +114,71 @@ async function seedSettings() {
       {
         key: SETTINGS_KEY.LIGHT_NFT_LOCKING_TIME,
         valueType: "NUMBER",
-        numValue: 600, // 10 minutes
+        numValue: 60, // 1 minutes
         title: "Light NFT Locking Time",
         description: "Time in seconds to lock the Light NFT for after use",
+      },
+    ],
+  });
+}
+
+async function seedAbilityScoresMapping() {
+  await prisma.abilityScoreMapping.createMany({
+    data: [
+      {
+        level: 1,
+        abilityB_Max: 1,
+        abilityB_Min: 1,
+        abilityK_Max: 1,
+        abilityK_Min: 1,
+        abilityL_Max: 1,
+        abilityL_Min: 1,
+        abilityR_Max: 1,
+        abilityR_Min: 1,
+      },
+      {
+        level: 2,
+        abilityB_Max: 10,
+        abilityB_Min: 2,
+        abilityK_Max: 4,
+        abilityK_Min: 2,
+        abilityL_Max: 2,
+        abilityL_Min: 2,
+        abilityR_Max: 10,
+        abilityR_Min: 2,
+      },
+      {
+        level: 3,
+        abilityB_Max: 15,
+        abilityB_Min: 11,
+        abilityK_Max: 7,
+        abilityK_Min: 5,
+        abilityL_Max: 3,
+        abilityL_Min: 3,
+        abilityR_Max: 15,
+        abilityR_Min: 11,
+      },
+      {
+        level: 4,
+        abilityB_Max: 20,
+        abilityB_Min: 16,
+        abilityK_Max: 10,
+        abilityK_Min: 8,
+        abilityL_Max: 4,
+        abilityL_Min: 4,
+        abilityR_Max: 20,
+        abilityR_Min: 16,
+      },
+      {
+        level: 5,
+        abilityB_Max: 30,
+        abilityB_Min: 21,
+        abilityK_Max: 15,
+        abilityK_Min: 11,
+        abilityL_Max: 5,
+        abilityL_Min: 5,
+        abilityR_Max: 30,
+        abilityR_Min: 21,
       },
     ],
   });
@@ -125,6 +187,7 @@ async function seedSettings() {
 async function main() {
   await seedUser();
   await seedSettings();
+  await seedAbilityScoresMapping();
   // const game1 = await prisma.game.create({
   //   data: { name: "game1", status: "WAITING" },
   // });
