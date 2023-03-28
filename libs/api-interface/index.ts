@@ -79,7 +79,7 @@ const NFTResponseSchema = z
 
 const SkipTakeSchema = z.object({
   skip: z.coerce.number().optional().default(0),
-  take: z.coerce.number().optional().default(100),
+  take: z.coerce.number().optional().default(255),
 });
 
 export const endpoints = {
