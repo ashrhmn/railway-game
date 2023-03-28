@@ -1320,7 +1320,17 @@ export class MapService {
         data: { level: { increment: 1 } },
         where: { gameId, color: color as COLOR },
       });
-      await tx.$queryRaw`
+      await tx.railPosition.createMany({
+        data: Object.values(COLOR).map((color) => ({
+          color,
+          gameId,
+          direction: "LEFT",
+          x: 14,
+          y: 14,
+        })),
+      });
+
+      await tx.$executeRaw`
         UPDATE
           nfts AS nft
         SET
@@ -1340,8 +1350,8 @@ export class MapService {
           ability_score_mappings AS asm
         WHERE
           nft."level" = asm.level
-          AND nft.game_id = '${gameId}'
-          AND nft.color = '${color}';
+          AND nft.game_id = ${gameId}
+          AND nft.color::text = ${color};
       `;
     });
 
