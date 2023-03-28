@@ -38,7 +38,11 @@ const GameView = () => {
     queryKey: ["map-positions", selectedGameId || "", selectedColor || ""],
     queryFn: () =>
       service(endpoints.map.getPositions)({
-        query: { color: selectedColor || "", gameId: selectedGameId || "" },
+        query: {
+          color: selectedColor || "",
+          gameId: selectedGameId || "",
+          take: 999,
+        },
       }),
     enabled: !!selectedGameId && !!selectedColor,
   });
