@@ -1,28 +1,314 @@
-import { serverSideAuth } from "@/service/serverSideAuth";
+import FullScreenSpinner from "@/components/common/FullScreenSpinner";
+import service from "@/service";
+import { useQuery } from "@tanstack/react-query";
+import { shortenIfAddress, useEthers } from "@usedapp/core";
 import { endpoints, InferOutputs } from "api-interface";
-import Link from "next/link";
+import React, { useCallback, useMemo, useState } from "react";
+import { COLOR } from "@prisma/client";
+import { mapPositions } from "@/data/map.positions";
+import { clx } from "@/utils/classname.utils";
+import { handleReqError } from "@/utils/error.utils";
+import { promiseToast } from "@/utils/toast.utils";
 
-export const getServerSideProps = serverSideAuth;
+const GameView = () => {
+  const { account } = useEthers();
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<COLOR | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState({ x: -1, y: -1 });
+  const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
+  const { data: allGames, status: allGameStatus } = useQuery({
+    queryKey: ["games"],
+    queryFn: () => service(endpoints.game.getAll)({}),
+    keepPreviousData: true,
+  });
+  const { data: colors, status: colorsFetchStatus } = useQuery({
+    queryKey: [
+      "available-maps-by-wallet-game-id",
+      selectedGameId || "",
+      account || "",
+    ],
+    queryFn: () =>
+      service(endpoints.game.getColorsAvailableForWalletByGameId)({
+        param: { gameId: selectedGameId || "", walletAddress: account || "" },
+      }),
+    enabled: !!selectedGameId && !!account,
+  });
 
-const Dashboard = ({
-  user,
-}: {
-  user: InferOutputs<typeof endpoints.auth.currentUser>;
-}) => {
+  const { data: mapPositionsData, status: mapPositionsFetchStatus } = useQuery({
+    queryKey: ["map-positions", selectedGameId || "", selectedColor || ""],
+    queryFn: () =>
+      service(endpoints.map.getPositions)({
+        query: { color: selectedColor || "", gameId: selectedGameId || "" },
+      }),
+    enabled: !!selectedGameId && !!selectedColor,
+  });
+
+  const { data: currentRailPosition, status: currentRailPositionStatus } =
+    useQuery({
+      queryKey: [
+        "current-rail-positions",
+        selectedGameId || "",
+        selectedColor || "",
+      ],
+      queryFn: () =>
+        service(endpoints.game.getCurrentRailPosition)({
+          query: { gameId: selectedGameId || "", color: selectedColor || "" },
+        }),
+      enabled: !!selectedGameId && !!selectedColor,
+    });
+
+  const { data: nfts, status: nftsFetchStatus } = useQuery({
+    queryKey: [
+      "nfts",
+      selectedColor || "",
+      selectedGameId || "",
+      account || "",
+    ],
+    queryFn: () =>
+      service(endpoints.nft.getAllNfts)({
+        query: {
+          color: selectedColor || "",
+          gameId: selectedGameId || "",
+          owner: account || "",
+          take: 1000,
+        },
+      }),
+    enabled: !!selectedGameId && !!selectedColor && !!account,
+  });
+
+  const positions = useMemo(() => {
+    if (!selectedGameId || !selectedColor) return [];
+    const def = mapPositions({ color: selectedColor, gameId: selectedGameId });
+    if (!mapPositionsData) return def;
+    return [
+      ...def.filter(
+        (d) => !mapPositionsData.find((p) => p.x === d.x && p.y === d.y)
+      ),
+      ...mapPositionsData,
+    ];
+  }, [mapPositionsData, selectedColor, selectedGameId]);
+
+  const getBlockView = useCallback(
+    (p: InferOutputs<typeof endpoints.map.getPositions>[number]) => {
+      if (!p.isRevealed) return "";
+      if (
+        !!currentRailPosition &&
+        currentRailPosition.x === p.x &&
+        currentRailPosition.y === p.y
+      )
+        return "🚂";
+      return `${p.x},${p.y}`;
+    },
+    [currentRailPosition]
+  );
+
+  const handleAssignNft = useCallback(async () => {
+    try {
+      if (
+        !selectedNftId ||
+        !selectedColor ||
+        !selectedGameId ||
+        selectedPoint.x === -1 ||
+        selectedPoint.y === -1
+      )
+        return;
+      if (!account) throw "Please Connect your wallet";
+      await promiseToast(
+        service(endpoints.map.placeNftOnMap)({
+          body: {
+            color: selectedColor,
+            gameId: selectedGameId,
+            nftId: selectedNftId,
+            walletAddress: account,
+            x: selectedPoint.x,
+            y: selectedPoint.y,
+          },
+        }),
+        {
+          loading: "Placing NFT...",
+          success: "NFT Placed",
+        }
+      );
+    } catch (error) {
+      handleReqError(error);
+    }
+  }, [
+    account,
+    selectedColor,
+    selectedGameId,
+    selectedNftId,
+    selectedPoint.x,
+    selectedPoint.y,
+  ]);
+
+  if (allGameStatus !== "success")
+    return (
+      <Wrapper>
+        <FullScreenSpinner />
+      </Wrapper>
+    );
+  if (!account)
+    return (
+      <Wrapper>
+        <h1>Please Connect your wallet</h1>
+      </Wrapper>
+    );
+  if (!selectedGameId)
+    return (
+      <Wrapper>
+        <div>
+          <h1>Select a Game</h1>
+          {allGames.map((game) => (
+            <div
+              onClick={() => setSelectedGameId(game.id)}
+              className="btn m-2 flex w-full flex-wrap"
+              key={game.id}
+            >
+              {game.name}
+            </div>
+          ))}
+        </div>
+      </Wrapper>
+    );
+  if (colorsFetchStatus !== "success")
+    return (
+      <Wrapper>
+        <FullScreenSpinner />
+      </Wrapper>
+    );
+  if (!selectedColor)
+    return (
+      <Wrapper>
+        <div>
+          <div className="mb-2 flex justify-center">
+            <button
+              onClick={() => setSelectedGameId(null)}
+              className="btn-sm btn"
+            >
+              Back
+            </button>
+          </div>
+          <h1>Select a color</h1>
+          {colors.map((color) => (
+            <div
+              className="btn m-2 flex w-full flex-wrap"
+              onClick={() => setSelectedColor(color)}
+              key={color}
+            >
+              {color}
+            </div>
+          ))}
+        </div>
+      </Wrapper>
+    );
+  if (
+    mapPositionsFetchStatus !== "success" ||
+    currentRailPositionStatus !== "success" ||
+    nftsFetchStatus !== "success"
+  )
+    return (
+      <Wrapper>
+        <FullScreenSpinner />
+      </Wrapper>
+    );
   return (
-    <div className="p-3">
-      <div className="flex justify-end items-center p-2">
-        <Link
-          href={`/api/auth/logout`}
-          className="bg-red-600 text-white p-1 rounded"
-        >
-          Logout
-        </Link>
+    <Wrapper>
+      <div>
+        <div className="mb-2 flex justify-end gap-1">
+          {selectedPoint.x !== -1 && selectedPoint.y !== -1 && (
+            <button
+              onClick={() => {
+                setSelectedPoint({ x: -1, y: -1 });
+                setSelectedNftId(null);
+              }}
+              className="btn-sm btn"
+            >
+              Reset Selection
+            </button>
+          )}
+          <button
+            className="btn-error btn-sm btn"
+            onClick={() => {
+              setSelectedColor(null);
+              setSelectedPoint({ x: -1, y: -1 });
+            }}
+          >
+            Exit
+          </button>
+        </div>
+        <div className="select-none">
+          {Array(15)
+            .fill(0)
+            .map((_, i) => (
+              <div className="flex" key={i}>
+                {positions
+                  .filter((p) => p.y === 14 - i)
+                  .sort((a, b) => a.x - b.x)
+                  .map((p) => (
+                    <div
+                      className={clx(
+                        "flex h-12 w-12 items-center justify-center text-xs transition-all",
+                        selectedPoint.x === p.x && selectedPoint.y === p.y
+                          ? "bg-gray-400 dark:bg-gray-900"
+                          : !p.isRevealed
+                          ? "bg-white dark:bg-black"
+                          : "cursor-pointer bg-gray-300 hover:bg-red-500 dark:bg-gray-700 dark:hover:bg-red-700"
+                      )}
+                      onClick={() => setSelectedPoint({ x: p.x, y: p.y })}
+                      key={p.x + "" + p.y}
+                    >
+                      {getBlockView(p)}
+                    </div>
+                  ))}
+              </div>
+            ))}
+        </div>
+        <div className="my-2 flex h-28 max-w-3xl flex-wrap gap-1 overflow-y-auto">
+          {nfts.data.map((nft) => (
+            <button
+              onClick={() => setSelectedNftId(nft.id)}
+              className={clx(
+                "btn-xs btn",
+                selectedNftId === nft.id && "btn-accent"
+              )}
+              key={nft.id}
+            >
+              {nft.job}
+            </button>
+          ))}
+        </div>
+        {!!selectedNftId &&
+          selectedPoint.x !== -1 &&
+          selectedPoint.y !== -1 && (
+            <button onClick={handleAssignNft} className="btn-primary btn">
+              Assign
+            </button>
+          )}
       </div>
-      <h1>Welcome, {user.username}</h1>
-      <p>Roles : {user.roles.join(" | ")}</p>
+    </Wrapper>
+  );
+};
+
+const Wrapper = ({ children }: { children: React.ReactNode }) => {
+  const { account, activateBrowserWallet, deactivate } = useEthers();
+  return (
+    <div className="text-2xl">
+      <nav className="fixed left-0 right-0 top-0 flex justify-end p-2">
+        <button
+          className="btn"
+          onClick={!account ? activateBrowserWallet : deactivate}
+        >
+          {!!account ? shortenIfAddress(account) : "Connect Wallet"}
+        </button>
+      </nav>
+      <div
+        style={{ minHeight: "calc(100vh - 4rem)" }}
+        className="mt-16 flex items-center justify-center overflow-y-auto"
+      >
+        {children}
+      </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default GameView;

@@ -385,6 +385,12 @@ export const endpoints = {
         .passthrough(),
       querySchema: z.object({ color: z.string(), gameId: z.string() }),
     },
+    getColorsAvailableForWalletByGameId: {
+      ...defaultConfig,
+      pattern: "games/colors-available/:gameId/:walletAddress",
+      paramSchema: z.object({ gameId: z.string(), walletAddress: z.string() }),
+      responseSchema: z.nativeEnum(COLOR).array(),
+    },
   },
   user: {
     getAllUsers: {

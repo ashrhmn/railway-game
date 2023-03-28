@@ -2,7 +2,6 @@ import Sidebar from "@/components/common/Sidebar";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { clx } from "@/utils/classname.utils";
 import { ReactNode, useState } from "react";
-import { Toaster } from "react-hot-toast";
 
 export type PageProps = {
   user?: { username: string; roles: string[] };
@@ -51,7 +50,6 @@ const RootLayout = ({
           </div>
         </main>
       )}
-      <Toaster position="bottom-right" />
     </div>
   );
 };

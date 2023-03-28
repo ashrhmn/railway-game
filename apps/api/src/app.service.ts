@@ -51,7 +51,9 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
       contract.on("Transfer", async (_from, to, tokenId) => {
         await this.prisma.nft.update({
-          where: { tokenId_gameId: { tokenId, gameId: game.id } },
+          where: {
+            tokenId_gameId: { tokenId: tokenId.toNumber(), gameId: game.id },
+          },
           data: { owner: to },
         });
       });

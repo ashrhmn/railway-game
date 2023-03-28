@@ -13,7 +13,7 @@ export const getServerSideProps: GetServerSideProps = async (context) =>
   )({})
     .then(() => ({
       props: {},
-      redirect: { destination: "/", statusCode: 301 },
+      redirect: { destination: "/dashboard", statusCode: 301 },
     }))
     .catch(() => ({ props: {} }));
 
@@ -30,7 +30,7 @@ const Login = () => {
         loading: "Signing In...",
       }
     )
-      .then(() => router.push("/"))
+      .then(() => router.push("/dashboard"))
       .catch(handleReqError);
   return (
     <div className="flex h-[100vh] w-[100vw] items-center justify-center">
@@ -56,7 +56,7 @@ const Login = () => {
           />
         </div>
 
-        <button type="submit" onClick={handleSignIn} className="btn btn-accent">
+        <button type="submit" onClick={handleSignIn} className="btn-accent btn">
           Sign In
         </button>
       </form>

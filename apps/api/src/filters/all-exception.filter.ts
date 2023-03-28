@@ -6,7 +6,7 @@ import { fromZodError } from "zod-validation-error";
 @Catch()
 export class AllExceptionsFilter extends BaseExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
-    console.log({ exception });
+    // console.log({ exception });
     if (
       exception instanceof Error &&
       exception.message === "Forbidden resource" &&

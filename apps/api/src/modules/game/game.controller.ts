@@ -56,4 +56,13 @@ export class GameController {
       this.gameService.getCurrentRailPosition,
     );
   }
+
+  @InferMethod(endpoints.game.getColorsAvailableForWalletByGameId)
+  getColorsAvailableForWalletByGameId(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.game.getColorsAvailableForWalletByGameId,
+      context,
+      this.gameService.getColorsAvailableForWalletByGameId,
+    );
+  }
 }

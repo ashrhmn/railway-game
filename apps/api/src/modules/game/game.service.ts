@@ -101,6 +101,20 @@ export class GameService {
     };
   });
 
+  getColorsAvailableForWalletByGameId = createAsyncService<
+    typeof endpoints.game.getColorsAvailableForWalletByGameId
+  >(async ({ param: { gameId, walletAddress } }) => {
+    return this.prisma.nft
+      .groupBy({
+        by: ["color"],
+        where: {
+          gameId,
+          owner: { equals: walletAddress, mode: "insensitive" },
+        },
+      })
+      .then((res) => res.map((r) => r.color));
+  });
+
   emit({ event, payload }: { event: string; payload?: any }) {
     this.socketService.socket?.emit(event, payload);
   }

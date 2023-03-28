@@ -52,7 +52,7 @@ const Sidebar = ({
           Icon={HomeIcon}
           expanded={isSidebarExpanded}
           text={"Dashboard"}
-          href="/"
+          href="/dashboard"
         />
         <SidebarLinks
           Icon={MapIcon}
@@ -121,7 +121,7 @@ const SidebarLinks = ({
     className={clx(
       "flex w-full items-center gap-2 text-xl",
       expanded ? "justify-center md:justify-start" : "justify-center",
-      "btn btn-ghost"
+      "btn-ghost btn"
     )}
     href={href}
   >
