@@ -1228,67 +1228,72 @@ export class MapService {
   ) {
     const eventParams: Parameters<typeof WS_EVENTS.MAP_POSITIONS_UPDATED>[] =
       [];
-    const res = await this.prisma.$transaction(async (tx) => {
-      await tx.railPosition.create({
-        data: { color, gameId, direction, x, y },
-      });
-      if (mapItem === "CHECKPOINT") {
-        await tx.mapPosition.update({
-          where: { x_y_gameId_color: { x, y, gameId, color } },
-          data: { checkPointPassed: true },
+    const res = await this.prisma.$transaction(
+      async (tx) => {
+        await tx.railPosition.create({
+          data: { color, gameId, direction, x, y },
         });
+        if (mapItem === "CHECKPOINT") {
+          await tx.mapPosition.update({
+            where: { x_y_gameId_color: { x, y, gameId, color } },
+            data: { checkPointPassed: true },
+          });
+          eventParams.push([
+            { gameId, color },
+            { x, y, message: "CHECKPOINT_PASSED" },
+          ]);
+        }
+        const root = new Position(x, y);
+
+        const positionsToReveal = [
+          root,
+          //  adjacents
+          root.left(),
+          root.right(),
+          root.up(),
+          root.down(),
+          root.up().left(),
+          root.up().right(),
+          root.down().left(),
+          root.down().right(),
+          //  2 square away left
+          root.left().left(),
+          root.left().left().up(),
+          root.left().left().down(),
+          //  2 square away up
+          root.up().up(),
+          root.up().up().left(),
+          root.up().up().right(),
+          //  2 square away right
+          root.right().right(),
+          root.right().right().up(),
+          root.right().right().down(),
+          //  2 square away down
+          root.down().down(),
+          root.down().down().left(),
+          root.down().down().right(),
+        ]
+          .map((pos) => pos.getPosition())
+          .filter(
+            (pos) => pos.x >= 0 && pos.y >= 0 && pos.x <= 14 && pos.y <= 14,
+          );
+
+        for (const { x, y } of positionsToReveal) {
+          await tx.mapPosition.upsert({
+            where: {
+              x_y_gameId_color: { x, y, gameId, color: color as COLOR },
+            },
+            create: { x, y, color: color as COLOR, gameId, isRevealed: true },
+            update: { x, y, color: color as COLOR, gameId, isRevealed: true },
+          });
+        }
         eventParams.push([
-          { gameId, color },
-          { x, y, message: "CHECKPOINT_PASSED" },
+          { color, gameId },
+          { x, y, message: "POSITIONS_REVEALED", positions: positionsToReveal },
         ]);
-      }
-      const root = new Position(x, y);
-
-      const positionsToReveal = [
-        root,
-        //  adjacents
-        root.left(),
-        root.right(),
-        root.up(),
-        root.down(),
-        root.up().left(),
-        root.up().right(),
-        root.down().left(),
-        root.down().right(),
-        //  2 square away left
-        root.left().left(),
-        root.left().left().up(),
-        root.left().left().down(),
-        //  2 square away up
-        root.up().up(),
-        root.up().up().left(),
-        root.up().up().right(),
-        //  2 square away right
-        root.right().right(),
-        root.right().right().up(),
-        root.right().right().down(),
-        //  2 square away down
-        root.down().down(),
-        root.down().down().left(),
-        root.down().down().right(),
-      ]
-        .map((pos) => pos.getPosition())
-        .filter(
-          (pos) => pos.x >= 0 && pos.y >= 0 && pos.x <= 14 && pos.y <= 14,
-        );
-
-      for (const { x, y } of positionsToReveal) {
-        await tx.mapPosition.upsert({
-          where: { x_y_gameId_color: { x, y, gameId, color: color as COLOR } },
-          create: { x, y, color: color as COLOR, gameId, isRevealed: true },
-          update: { x, y, color: color as COLOR, gameId, isRevealed: true },
-        });
-      }
-      eventParams.push([
-        { color, gameId },
-        { x, y, message: "POSITIONS_REVEALED", positions: positionsToReveal },
-      ]);
-    });
+      },
+      { maxWait: 999999999999999, timeout: 999999999999999 },
+    );
     eventParams.forEach((params) => {
       this.emit(WS_EVENTS.MAP_POSITIONS_UPDATED(...params));
     });
