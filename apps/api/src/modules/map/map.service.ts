@@ -505,7 +505,8 @@ export class MapService {
             if (
               !!mapPosition.mapItem &&
               mapPosition.mapItem === "RIVER" &&
-              mapPosition.bridgeConstructedOn < timestamp() &&
+              (mapPosition.bridgeConstructedOn === 0 ||
+                mapPosition.bridgeConstructedOn > timestamp()) &&
               nft.job !== "BRIDGE"
             )
               throw new BadRequestException(
@@ -527,7 +528,10 @@ export class MapService {
                   `NFT with id ${nftId}(${nft.job}) can only be placed on river`,
                 );
 
-              if (mapPosition.bridgeConstructedOn < timestamp())
+              if (
+                mapPosition.bridgeConstructedOn !== 0 &&
+                mapPosition.bridgeConstructedOn < timestamp()
+              )
                 throw new BadRequestException(
                   `A bridge is already constructed on this river`,
                 );

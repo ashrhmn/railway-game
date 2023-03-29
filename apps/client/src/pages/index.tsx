@@ -1,14 +1,15 @@
 import FullScreenSpinner from "@/components/common/FullScreenSpinner";
-import service from "@/service";
+import service, { socket } from "@/service";
 import { useQuery } from "@tanstack/react-query";
 import { shortenIfAddress, useEthers } from "@usedapp/core";
-import { endpoints, InferOutputs } from "api-interface";
-import React, { useCallback, useMemo, useState } from "react";
+import { endpoints, InferOutputs, WS_EVENTS } from "api-interface";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { COLOR } from "@prisma/client";
 import { mapPositions } from "@/data/map.positions";
 import { clx } from "@/utils/classname.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { promiseToast } from "@/utils/toast.utils";
+import { timestamp } from "@/utils/date.utils";
 
 const GameView = () => {
   const { account } = useEthers();
@@ -16,6 +17,7 @@ const GameView = () => {
   const [selectedColor, setSelectedColor] = useState<COLOR | null>(null);
   const [selectedPoint, setSelectedPoint] = useState({ x: -1, y: -1 });
   const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
+
   const { data: allGames, status: allGameStatus } = useQuery({
     queryKey: ["games"],
     queryFn: () => service(endpoints.game.getAll)({}),
@@ -34,7 +36,11 @@ const GameView = () => {
     enabled: !!selectedGameId && !!account,
   });
 
-  const { data: mapPositionsData, status: mapPositionsFetchStatus } = useQuery({
+  const {
+    data: mapPositionsData,
+    status: mapPositionsFetchStatus,
+    refetch: refetchMapPositions,
+  } = useQuery({
     queryKey: ["map-positions", selectedGameId || "", selectedColor || ""],
     queryFn: () =>
       service(endpoints.map.getPositions)({
@@ -47,19 +53,22 @@ const GameView = () => {
     enabled: !!selectedGameId && !!selectedColor,
   });
 
-  const { data: currentRailPosition, status: currentRailPositionStatus } =
-    useQuery({
-      queryKey: [
-        "current-rail-positions",
-        selectedGameId || "",
-        selectedColor || "",
-      ],
-      queryFn: () =>
-        service(endpoints.game.getCurrentRailPosition)({
-          query: { gameId: selectedGameId || "", color: selectedColor || "" },
-        }),
-      enabled: !!selectedGameId && !!selectedColor,
-    });
+  const {
+    data: currentRailPosition,
+    status: currentRailPositionStatus,
+    refetch: refetchCurrentRailPosition,
+  } = useQuery({
+    queryKey: [
+      "current-rail-positions",
+      selectedGameId || "",
+      selectedColor || "",
+    ],
+    queryFn: () =>
+      service(endpoints.game.getCurrentRailPosition)({
+        query: { gameId: selectedGameId || "", color: selectedColor || "" },
+      }),
+    enabled: !!selectedGameId && !!selectedColor,
+  });
 
   const { data: nfts, status: nftsFetchStatus } = useQuery({
     queryKey: [
@@ -79,6 +88,10 @@ const GameView = () => {
       }),
     enabled: !!selectedGameId && !!selectedColor && !!account,
   });
+
+  const [selectedNft, setSelectedNft] = useState<
+    null | Exclude<typeof nfts, undefined>["data"][number]
+  >(null);
 
   const positions = useMemo(() => {
     if (!selectedGameId || !selectedColor) return [];
@@ -143,6 +156,45 @@ const GameView = () => {
     selectedNftId,
     selectedPoint.x,
     selectedPoint.y,
+  ]);
+
+  const selectedPointDetails = useMemo(() => {
+    if (selectedPoint.x === -1 || selectedPoint.y === -1) return null;
+    return positions.find(
+      (p) => p.x === selectedPoint.x && p.y === selectedPoint.y
+    );
+  }, [positions, selectedPoint.x, selectedPoint.y]);
+
+  useEffect(() => {
+    if (!!selectedGameId && !!selectedColor) {
+      const railChangeEvent = WS_EVENTS.RAIL_POSITION_CHANGED({
+        color: selectedColor,
+        gameId: selectedGameId,
+      }).event;
+
+      const nftPlaceEvent = WS_EVENTS.MAP_POSITIONS_UPDATED({
+        color: selectedColor,
+        gameId: selectedGameId,
+      }).event;
+
+      const railChangeEventHandler = () => {
+        refetchCurrentRailPosition();
+        refetchMapPositions();
+      };
+
+      socket.on(railChangeEvent, railChangeEventHandler);
+      socket.on(nftPlaceEvent, refetchMapPositions);
+
+      return () => {
+        socket.off(railChangeEvent, railChangeEventHandler);
+        socket.off(nftPlaceEvent, refetchMapPositions);
+      };
+    }
+  }, [
+    refetchCurrentRailPosition,
+    refetchMapPositions,
+    selectedColor,
+    selectedGameId,
   ]);
 
   if (allGameStatus !== "success")
@@ -240,54 +292,114 @@ const GameView = () => {
             Exit
           </button>
         </div>
-        <div className="select-none">
-          {Array(15)
-            .fill(0)
-            .map((_, i) => (
-              <div className="flex" key={i}>
-                {positions
-                  .filter((p) => p.y === 14 - i)
-                  .sort((a, b) => a.x - b.x)
-                  .map((p) => (
-                    <div
-                      className={clx(
-                        "flex h-12 w-12 items-center justify-center text-xs transition-all",
-                        selectedPoint.x === p.x && selectedPoint.y === p.y
-                          ? "bg-gray-400 dark:bg-gray-900"
-                          : !p.isRevealed
-                          ? "bg-white dark:bg-black"
-                          : "cursor-pointer bg-gray-300 hover:bg-red-500 dark:bg-gray-700 dark:hover:bg-red-700"
-                      )}
-                      onClick={() => setSelectedPoint({ x: p.x, y: p.y })}
-                      key={p.x + "" + p.y}
-                    >
-                      {getBlockView(p)}
-                    </div>
-                  ))}
+        <div className="flex w-full items-center gap-4">
+          <div>
+            <div className="select-none">
+              {Array(15)
+                .fill(0)
+                .map((_, i) => (
+                  <div className="flex" key={i}>
+                    {positions
+                      .filter((p) => p.y === 14 - i)
+                      .sort((a, b) => a.x - b.x)
+                      .map((p) => (
+                        <div
+                          className={clx(
+                            "flex h-12 w-12 items-center justify-center text-xs transition-all",
+                            selectedPoint.x === p.x && selectedPoint.y === p.y
+                              ? "bg-gray-400 dark:bg-gray-900"
+                              : !p.isRevealed
+                              ? "bg-white dark:bg-black"
+                              : "cursor-pointer bg-gray-300 hover:bg-red-500 dark:bg-gray-700 dark:hover:bg-red-700"
+                          )}
+                          onClick={() => setSelectedPoint({ x: p.x, y: p.y })}
+                          key={p.x + "" + p.y}
+                        >
+                          {getBlockView(p)}
+                        </div>
+                      ))}
+                  </div>
+                ))}
+            </div>
+            <div className="my-2 flex h-28 max-w-3xl flex-wrap gap-1 overflow-y-auto">
+              {nfts.data.map((nft) => (
+                <button
+                  onClick={() => {
+                    setSelectedNftId(nft.id);
+                    setSelectedNft(nft);
+                  }}
+                  className={clx(
+                    "btn-xs btn",
+                    selectedNftId === nft.id && "btn-accent"
+                  )}
+                  key={nft.id}
+                >
+                  {nft.job}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="w-2/6">
+            {selectedPointDetails && (
+              <div className="my-2 text-sm">
+                <h1 className="text-xl font-bold">Selected Point</h1>
+                <div>
+                  Place Revealed :{" "}
+                  {selectedPointDetails.isRevealed ? "Yes" : "No"}
+                </div>
+                <div>Map Item : {selectedPointDetails.mapItem || "None"}</div>
+                {selectedPointDetails.mapItem === "RIVER" && (
+                  <div>
+                    {selectedPointDetails.bridgeConstructedOn === 0
+                      ? "Bridge Constructed : No"
+                      : timestamp() > selectedPointDetails.bridgeConstructedOn
+                      ? "Bridge Constructed : Yes"
+                      : `Bridge Construction Completes on : ${new Date(
+                          selectedPointDetails.bridgeConstructedOn * 1000
+                        ).toLocaleString()}`}
+                  </div>
+                )}
+                <div>
+                  Preplaced Item : {selectedPointDetails.prePlaced || "None"}
+                </div>
+                <div>
+                  Enemy : {selectedPointDetails.enemy?.name || "None"}{" "}
+                  {selectedPointDetails.enemy &&
+                    `Strength(${selectedPointDetails.enemy.currentStrength}/${selectedPointDetails.enemy.strength})`}
+                </div>
+                <div>
+                  Player Assigned : {selectedPointDetails.nft?.job || "None"}
+                </div>
               </div>
-            ))}
-        </div>
-        <div className="my-2 flex h-28 max-w-3xl flex-wrap gap-1 overflow-y-auto">
-          {nfts.data.map((nft) => (
-            <button
-              onClick={() => setSelectedNftId(nft.id)}
-              className={clx(
-                "btn-xs btn",
-                selectedNftId === nft.id && "btn-accent"
+            )}
+            {selectedNft && (
+              <div className="my-2 text-sm">
+                <h1 className="text-xl">Selected NFT</h1>
+                <div>Job : {selectedNft.job}</div>
+                <div>
+                  Frozen :{" "}
+                  {selectedNft.frozenTill < timestamp()
+                    ? "No"
+                    : `Till ${new Date(
+                        selectedNft.frozenTill * 1000
+                      ).toLocaleString()}`}
+                </div>
+                <div>{`B: ${selectedNft.abilityB} L: ${selectedNft.abilityL} K: ${selectedNft.abilityK} R: ${selectedNft.abilityR}`}</div>
+              </div>
+            )}
+            {!!selectedNft &&
+              selectedPoint.x !== -1 &&
+              selectedPoint.y !== -1 && (
+                <button
+                  onClick={handleAssignNft}
+                  className="btn-primary btn-sm btn"
+                >
+                  Assign {selectedNft.job} on {selectedPoint.x},
+                  {selectedPoint.y}
+                </button>
               )}
-              key={nft.id}
-            >
-              {nft.job}
-            </button>
-          ))}
+          </div>
         </div>
-        {!!selectedNftId &&
-          selectedPoint.x !== -1 &&
-          selectedPoint.y !== -1 && (
-            <button onClick={handleAssignNft} className="btn-primary btn">
-              Assign
-            </button>
-          )}
       </div>
     </Wrapper>
   );
