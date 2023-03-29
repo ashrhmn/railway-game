@@ -940,7 +940,10 @@ export class MapService {
       );
     }
 
-    if (!nextMapPosition.nft) {
+    const nextPositionNftJob =
+      nextMapPosition.nft?.job || nextMapPosition.prePlaced;
+
+    if (!nextPositionNftJob) {
       // console.log(
       //   `No nft placed forward, rail stays on the same position ${JSON.stringify(
       //     { gameId, color },
@@ -952,8 +955,11 @@ export class MapService {
     }
 
     if (
-      nextMapPosition.railConstructedOn > timestamp() ||
-      nextMapPosition.railConstructedOn === 0
+      !!nextMapPosition.nft &&
+      nextMapPosition.nft.job &&
+      nextMapPosition.nft.job.startsWith("RAIL") &&
+      (nextMapPosition.railConstructedOn > timestamp() ||
+        nextMapPosition.railConstructedOn === 0)
     ) {
       console.log(
         `No rail constructed forward, rail stays on the same position ${JSON.stringify(
@@ -973,8 +979,8 @@ export class MapService {
 
     if (direction === "LEFT") {
       if (
-        nextMapPosition.nft.job === "RAIL_4_6" ||
-        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+        nextPositionNftJob === "RAIL_4_6" ||
+        nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
         console.log(`Going left ${JSON.stringify({ gameId, color }, null, 2)}`);
         return await this.onPositionChange(
@@ -986,7 +992,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_2_6") {
+      if (nextPositionNftJob === "RAIL_2_6") {
         console.log(
           `Going left,turning down ${JSON.stringify(
             { gameId, color },
@@ -1003,7 +1009,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_6_8") {
+      if (nextPositionNftJob === "RAIL_6_8") {
         console.log(
           `Going left, turning up ${JSON.stringify(
             { gameId, color },
@@ -1022,7 +1028,7 @@ export class MapService {
       }
       console.log(
         "Attempt left, but nft job mismatch",
-        nextMapPosition.nft.job,
+        nextPositionNftJob,
         " on ",
         x,
         y,
@@ -1034,8 +1040,8 @@ export class MapService {
 
     if (direction === "RIGHT") {
       if (
-        nextMapPosition.nft.job === "RAIL_4_6" ||
-        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+        nextPositionNftJob === "RAIL_4_6" ||
+        nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
         console.log(
           `Going right ${JSON.stringify({ gameId, color }, null, 2)}`,
@@ -1049,7 +1055,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_2_4") {
+      if (nextPositionNftJob === "RAIL_2_4") {
         console.log(
           `Going right, turning down ${JSON.stringify(
             { gameId, color },
@@ -1066,7 +1072,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_4_8") {
+      if (nextPositionNftJob === "RAIL_4_8") {
         console.log(
           `Going right, turning up ${JSON.stringify(
             { gameId, color },
@@ -1085,7 +1091,7 @@ export class MapService {
       }
       console.log(
         "Attempt right, but nft job mismatch",
-        nextMapPosition.nft.job,
+        nextPositionNftJob,
         " on ",
         x,
         y,
@@ -1097,8 +1103,8 @@ export class MapService {
 
     if (direction === "UP") {
       if (
-        nextMapPosition.nft.job === "RAIL_2_8" ||
-        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+        nextPositionNftJob === "RAIL_2_8" ||
+        nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
         console.log(`Going up ${JSON.stringify({ gameId, color }, null, 2)}`);
         return await this.onPositionChange(
@@ -1110,7 +1116,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_2_6") {
+      if (nextPositionNftJob === "RAIL_2_6") {
         console.log(
           `Going up, turning right ${JSON.stringify(
             { gameId, color },
@@ -1127,7 +1133,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_2_4") {
+      if (nextPositionNftJob === "RAIL_2_4") {
         console.log(
           `Going up, turning left ${JSON.stringify(
             { gameId, color },
@@ -1146,7 +1152,7 @@ export class MapService {
       }
       console.log(
         "Attempt up, but nft job mismatch",
-        nextMapPosition.nft.job,
+        nextPositionNftJob,
         " on ",
         x,
         y,
@@ -1158,8 +1164,8 @@ export class MapService {
 
     if (direction === "DOWN") {
       if (
-        nextMapPosition.nft.job === "RAIL_2_8" ||
-        nextMapPosition.nft.job === "RAIL_2_4_6_8"
+        nextPositionNftJob === "RAIL_2_8" ||
+        nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
         console.log(`Going down ${JSON.stringify({ gameId, color }, null, 2)}`);
         return await this.onPositionChange(
@@ -1171,7 +1177,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_6_8") {
+      if (nextPositionNftJob === "RAIL_6_8") {
         console.log(
           `Going down, turning right ${JSON.stringify(
             { gameId, color },
@@ -1188,7 +1194,7 @@ export class MapService {
           nextMapPosition.mapItem,
         );
       }
-      if (nextMapPosition.nft.job === "RAIL_4_8") {
+      if (nextPositionNftJob === "RAIL_4_8") {
         console.log(
           `Going down, turning left ${JSON.stringify(
             { gameId, color },
@@ -1207,7 +1213,7 @@ export class MapService {
       }
       console.log(
         "Attempt down, but nft job mismatch",
-        nextMapPosition.nft.job,
+        nextPositionNftJob,
         " on ",
         x,
         y,
