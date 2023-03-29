@@ -365,7 +365,9 @@ const GameView = () => {
                 <div>
                   Enemy : {selectedPointDetails.enemy?.name || "None"}{" "}
                   {selectedPointDetails.enemy &&
-                    `Strength(${selectedPointDetails.enemy.currentStrength}/${selectedPointDetails.enemy.strength})`}
+                    (selectedPointDetails.enemy.currentStrength === 0
+                      ? "(Defeated)"
+                      : `Strength(${selectedPointDetails.enemy.currentStrength}/${selectedPointDetails.enemy.strength})`)}
                 </div>
                 <div>
                   Player Assigned : {selectedPointDetails.nft?.job || "None"}
