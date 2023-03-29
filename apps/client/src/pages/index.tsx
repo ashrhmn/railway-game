@@ -270,7 +270,13 @@ const GameView = () => {
   return (
     <Wrapper>
       <div>
-        <div className="mb-2 flex justify-end gap-1">
+        <div className="mb-2 flex items-center justify-end gap-1">
+          <div className="text-sm">
+            <span className="font-bold">Rail Position</span> :{" "}
+            {currentRailPosition.x},{currentRailPosition.y}{" "}
+            <span className="font-bold">Direction</span> :{" "}
+            {currentRailPosition.direction}
+          </div>
           {selectedPoint.x !== -1 && selectedPoint.y !== -1 && (
             <button
               onClick={() => {
