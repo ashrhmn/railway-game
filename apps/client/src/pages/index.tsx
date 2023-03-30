@@ -354,6 +354,10 @@ const GameView = () => {
                   {selectedPointDetails.isRevealed ? "Yes" : "No"}
                 </div>
                 <div>Map Item : {selectedPointDetails.mapItem || "None"}</div>
+                <div>
+                  Map Item Variant :{" "}
+                  {selectedPointDetails.mapItemVariant || "None"}
+                </div>
                 {selectedPointDetails.mapItem === "RIVER" && (
                   <div>
                     {selectedPointDetails.bridgeConstructedOn === 0
