@@ -21,12 +21,14 @@ import { timestamp } from "src/utils/date.utils";
 import { SETTINGS_KEY } from "src/enums/settings-key.enum";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { SocketService } from "../socket/socket.service";
+import { CacheService } from "src/providers/cache/cache-manager.service";
 
 @Injectable()
 export class MapService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socketService: SocketService,
+    private readonly cacheService: CacheService,
   ) {}
   getColors = createService<typeof endpoints.map.getColors>(() => {
     return Object.values(COLOR);

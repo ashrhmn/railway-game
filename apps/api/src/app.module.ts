@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import {
+  CacheModule,
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+} from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AppService } from "./app.service";
@@ -12,6 +17,8 @@ import { PrismaModule } from "./modules/prisma/prisma.module";
 import { SettingsModule } from "./modules/settings/settings.module";
 import { SocketModule } from "./modules/socket/socket.module";
 import { UserModule } from "./modules/user/user.module";
+import * as redisStore from "cache-manager-redis-store";
+import { CacheManagerModule } from "./providers/cache/cache-manager.module";
 
 @Module({
   imports: [
@@ -24,6 +31,16 @@ import { UserModule } from "./modules/user/user.module";
     SettingsModule,
     ScheduleModule.forRoot(),
     SocketModule,
+    CacheModule.register({
+      store: redisStore.create({
+        host: process.env.REDIS_HOST || "localhost",
+        port: +(process.env.REDIS_PORT || 6379),
+        password: process.env.REDIS_PASSWORD,
+      }),
+      isGlobal: true,
+      ttl: 10,
+    }),
+    CacheManagerModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }, AppService],
 })

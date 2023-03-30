@@ -34,6 +34,8 @@
     "@prisma/client": "^4.11.0",
     "api-interface": "1.0.0",
     "argon2": "^0.30.3",
+    "cache-manager": "4.1",
+    "cache-manager-redis-store": "2",
     "cookie-parser": "^1.4.6",
     "csv-parser": "^3.0.0",
     "ethers": "^5.7.2",
