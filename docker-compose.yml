@@ -6,7 +6,16 @@ services:
     image: railway-game-img
     ports:
       - 3000:3000
+      - 4000:4000
     container_name: railway-game
     restart: unless-stopped
     env_file:
       - .env
+  redis:
+    image: redis:alpine
+    container_name: railway-game-redis
+    restart: unless-stopped
+networks:
+  default:
+    name: nginx
+    external: true
