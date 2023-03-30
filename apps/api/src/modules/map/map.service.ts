@@ -53,29 +53,34 @@ export class MapService {
 
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
     async ({ query: { skip, take, color, gameId } }, { user }) => {
-      const data = await this.prisma.mapPosition.findMany({
-        where: {
-          gameId,
-          color: COLOR[color],
-          ...(!!user && user.roles.includes("ADMIN")
-            ? {}
-            : { isRevealed: true }),
-        },
-        include: {
-          nft: true,
-          enemy: { include: { _count: { select: { positions: true } } } },
-        },
-        skip,
-        take,
-        orderBy: [
-          {
-            x: "asc",
-          },
-          {
-            y: "asc",
-          },
-        ],
-      });
+      const data = await this.cacheService.getIfCached(
+        `getPositions:${JSON.stringify({ skip, take, color, gameId, user })}`,
+        10,
+        () =>
+          this.prisma.mapPosition.findMany({
+            where: {
+              gameId,
+              color: COLOR[color],
+              ...(!!user && user.roles.includes("ADMIN")
+                ? {}
+                : { isRevealed: true }),
+            },
+            include: {
+              nft: true,
+              enemy: { include: { _count: { select: { positions: true } } } },
+            },
+            skip,
+            take,
+            orderBy: [
+              {
+                x: "asc",
+              },
+              {
+                y: "asc",
+              },
+            ],
+          }),
+      );
       return data;
     },
   );
@@ -154,9 +159,26 @@ export class MapService {
   assignEnemyToPosition = createAsyncService<
     typeof endpoints.map.assignEnemyToPosition
   >(async ({ body: { color, gameId, x, y, strength, name } }) => {
-    const mountainCount = await this.prisma.mapPosition.count({
-      where: { x, y, color: COLOR[color], gameId, mapItem: MAP_ITEMS.MOUNTAIN },
-    });
+    const mountainCount = await this.cacheService.getIfCached(
+      `map-positions-count:${JSON.stringify({
+        x,
+        y,
+        color: COLOR[color],
+        gameId,
+        mapItem: MAP_ITEMS.MOUNTAIN,
+      })}`,
+      1,
+      () =>
+        this.prisma.mapPosition.count({
+          where: {
+            x,
+            y,
+            color: COLOR[color],
+            gameId,
+            mapItem: MAP_ITEMS.MOUNTAIN,
+          },
+        }),
+    );
     if (mountainCount > 0)
       throw new BadRequestException(`Cannot place enemy on mountain`);
     const enemyCount = await this.prisma.mapPosition.count({
@@ -380,9 +402,14 @@ export class MapService {
         [];
       const res = await this.prisma.$transaction(
         async (tx) => {
-          const game = await tx.game.findUnique({
-            where: { id: gameId },
-          });
+          const game = await this.cacheService.getIfCached(
+            `tx:game:${gameId}`,
+            15,
+            () =>
+              tx.game.findUnique({
+                where: { id: gameId },
+              }),
+          );
           if (!game)
             throw new NotFoundException(`Game with id ${gameId} not found`);
           if (game.status !== GAME_STATUS.RUNNING)
@@ -397,7 +424,11 @@ export class MapService {
               `Invalid contract chainId : ${game.chainId}`,
             );
 
-          const nft = await tx.nft.findUnique({ where: { id: nftId } });
+          const nft = await this.cacheService.getIfCached(
+            `tx:nft:${nftId}`,
+            15,
+            () => tx.nft.findUnique({ where: { id: nftId } }),
+          );
           if (!nft)
             throw new NotFoundException(`NFT with id ${nftId} not found`);
           if (nft.frozenTill > timestamp())
@@ -409,7 +440,9 @@ export class MapService {
             CONFIG.PROVIDER(game.chainId),
           );
 
-          const owner = await contract.ownerOf(nft.tokenId);
+          const owner = (await this.cacheService.getIfCached(``, 10, () =>
+            contract.ownerOf(nft.tokenId).catch(() => ""),
+          )) as any;
           if (owner.toLowerCase() !== walletAddress.toLowerCase())
             throw new BadRequestException(
               `NFT with id ${nftId} does not belong to wallet address ${walletAddress}`,
@@ -424,16 +457,30 @@ export class MapService {
               `NFT with id ${nftId} is not ${color}`,
             );
 
-          const mapPosition = await tx.mapPosition.findUnique({
-            where: { x_y_gameId_color: { x, y, gameId, color } },
-            select: {
-              enemy: true,
-              mapItem: true,
-              isRevealed: true,
-              bridgeConstructedOn: true,
-              id: true,
-            },
-          });
+          const mapPosition = await this.cacheService.getIfCached(
+            `map-positions-unique:${JSON.stringify({
+              where: { x_y_gameId_color: { x, y, gameId, color } },
+              select: {
+                enemy: true,
+                mapItem: true,
+                isRevealed: true,
+                bridgeConstructedOn: true,
+                id: true,
+              },
+            })}`,
+            1,
+            () =>
+              tx.mapPosition.findUnique({
+                where: { x_y_gameId_color: { x, y, gameId, color } },
+                select: {
+                  enemy: true,
+                  mapItem: true,
+                  isRevealed: true,
+                  bridgeConstructedOn: true,
+                  id: true,
+                },
+              }),
+          );
 
           if (nft.job === "LIGHT") {
             const positionsToReveal = [
@@ -467,10 +514,15 @@ export class MapService {
               { x, y, job: "LIGHT", additionalLightUpPositions },
             ]);
 
-            const lightNftFrozenTime = await tx.settings.findUnique({
-              where: { key: SETTINGS_KEY.LIGHT_NFT_LOCKING_TIME },
-              select: { numValue: true },
-            });
+            const lightNftFrozenTime = await this.cacheService.getIfCached(
+              `SETTINGS:LIGHT_NFT_LOCKING_TIME`,
+              30,
+              () =>
+                tx.settings.findUnique({
+                  where: { key: SETTINGS_KEY.LIGHT_NFT_LOCKING_TIME },
+                  select: { numValue: true },
+                }),
+            );
 
             if (!lightNftFrozenTime || !lightNftFrozenTime.numValue)
               throw new BadRequestException(`Light NFT Frozen Time not set`);
@@ -538,10 +590,16 @@ export class MapService {
                   `A bridge is already constructed on this river`,
                 );
 
-              const bridgeConstructionBaseTime = await tx.settings.findUnique({
-                where: { key: SETTINGS_KEY.BRIDGE_CONSTRUCTION_TIME },
-                select: { numValue: true },
-              });
+              const bridgeConstructionBaseTime =
+                await this.cacheService.getIfCached(
+                  `SETTINGS:BRIDGE_CONSTRUCTION_TIME`,
+                  30,
+                  () =>
+                    tx.settings.findUnique({
+                      where: { key: SETTINGS_KEY.BRIDGE_CONSTRUCTION_TIME },
+                      select: { numValue: true },
+                    }),
+                );
 
               if (
                 !bridgeConstructionBaseTime ||
@@ -625,10 +683,18 @@ export class MapService {
                 .filter((v) => v.startsWith("RAIL_"))
                 .includes(nft.job)
             ) {
-              const currentRailPosition = await tx.railPosition.findFirst({
-                where: { color: color, gameId: gameId },
-                orderBy: { createdAt: "desc" },
-              });
+              const currentRailPosition = await this.cacheService.getIfCached(
+                `current-rail-position:${JSON.stringify({
+                  where: { color: color, gameId: gameId },
+                  orderBy: { createdAt: "desc" },
+                })}`,
+                5,
+                () =>
+                  tx.railPosition.findFirst({
+                    where: { color: color, gameId: gameId },
+                    orderBy: { createdAt: "desc" },
+                  }),
+              );
 
               if (!currentRailPosition)
                 throw new BadRequestException(
@@ -640,12 +706,16 @@ export class MapService {
                   `Rail NFT can not be placed on the same position as current rail position`,
                 );
 
-              const railRoadConstructionBaseTime = await tx.settings.findUnique(
-                {
-                  where: { key: SETTINGS_KEY.RAIL_ROAD_CONSTRUCTION_TIME },
-                  select: { numValue: true },
-                },
-              );
+              const railRoadConstructionBaseTime =
+                await this.cacheService.getIfCached(
+                  `Settings:RAIL_ROAD_CONSTRUCTION_TIME`,
+                  30,
+                  () =>
+                    tx.settings.findUnique({
+                      where: { key: SETTINGS_KEY.RAIL_ROAD_CONSTRUCTION_TIME },
+                      select: { numValue: true },
+                    }),
+                );
 
               if (
                 !railRoadConstructionBaseTime ||
@@ -681,10 +751,15 @@ export class MapService {
                 { x, y, job: nft.job, railConstructedOn },
               ]);
             }
-            const nftFrozenTime = await tx.settings.findUnique({
-              where: { key: SETTINGS_KEY.NFT_LOCK_TIME },
-              select: { numValue: true },
-            });
+            const nftFrozenTime = await this.cacheService.getIfCached(
+              `Settings:NFT_LOCK_TIME`,
+              30,
+              () =>
+                tx.settings.findUnique({
+                  where: { key: SETTINGS_KEY.NFT_LOCK_TIME },
+                  select: { numValue: true },
+                }),
+            );
 
             if (!nftFrozenTime || !nftFrozenTime.numValue)
               throw new BadRequestException(`NFT Frozen Time not set`);
@@ -729,9 +804,14 @@ export class MapService {
   @Cron(CronExpression.EVERY_30_SECONDS)
   async checkAndMoveRail() {
     console.log("checkAndMoveRail");
-    const runningGames = await this.prisma.game.findMany({
-      where: { status: "RUNNING" },
-    });
+    const runningGames = await this.cacheService.getIfCached(
+      `running-games`,
+      30,
+      () =>
+        this.prisma.game.findMany({
+          where: { status: "RUNNING" },
+        }),
+    );
     runningGames.forEach((game) =>
       Object.keys(COLOR).forEach((color) =>
         this.checkAndMoveRailByGameIdAndColor(game.id, color as COLOR),
@@ -740,10 +820,18 @@ export class MapService {
   }
 
   async checkAndMoveRailByGameIdAndColor(gameId: string, color: COLOR) {
-    const currentRailPosition = await this.prisma.railPosition.findFirst({
-      where: { gameId, color },
-      orderBy: { createdAt: "desc" },
-    });
+    const currentRailPosition = await this.cacheService.getIfCached(
+      `current-rail-position:${JSON.stringify({
+        where: { gameId, color },
+        orderBy: { createdAt: "desc" },
+      })}`,
+      5,
+      () =>
+        this.prisma.railPosition.findFirst({
+          where: { gameId, color },
+          orderBy: { createdAt: "desc" },
+        }),
+    );
 
     if (!currentRailPosition) {
       console.warn(
@@ -756,10 +844,15 @@ export class MapService {
       return;
     }
 
-    const railMovementLockTime = await this.prisma.settings.findUnique({
-      where: { key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME },
-      select: { numValue: true },
-    });
+    const railMovementLockTime = await this.cacheService.getIfCached(
+      `Settings:RAIL_MOVEMENT_LOCK_TIME`,
+      30,
+      () =>
+        this.prisma.settings.findUnique({
+          where: { key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME },
+          select: { numValue: true },
+        }),
+    );
 
     if (!railMovementLockTime || !railMovementLockTime.numValue) {
       console.info(`Rail movement lock time is not set`);
@@ -846,10 +939,18 @@ export class MapService {
       );
     }
 
-    const nextMapPosition = await this.prisma.mapPosition.findUnique({
-      where: { x_y_gameId_color: { x, y, gameId, color } },
-      include: { enemy: true, game: true, nft: true },
-    });
+    const nextMapPosition = await this.cacheService.getIfCached(
+      `next-map-position:${JSON.stringify({
+        where: { x_y_gameId_color: { x, y, gameId, color } },
+        include: { enemy: true, game: true, nft: true },
+      })}`,
+      1,
+      () =>
+        this.prisma.mapPosition.findUnique({
+          where: { x_y_gameId_color: { x, y, gameId, color } },
+          include: { enemy: true, game: true, nft: true },
+        }),
+    );
 
     if (!nextMapPosition) {
       console.warn(
@@ -1318,9 +1419,26 @@ export class MapService {
 
   async checkWinner(color: COLOR, gameId: string, x: number, y: number) {
     if (x !== 0 || y !== 0) return;
-    const unpassedCheckPoints = await this.prisma.mapPosition.count({
-      where: { mapItem: "CHECKPOINT", checkPointPassed: false, gameId, color },
-    });
+    const unpassedCheckPoints = await this.cacheService.getIfCached(
+      `unpassed-checkpoints-count:${JSON.stringify({
+        where: {
+          mapItem: "CHECKPOINT",
+          checkPointPassed: false,
+          gameId,
+          color,
+        },
+      })}`,
+      1,
+      () =>
+        this.prisma.mapPosition.count({
+          where: {
+            mapItem: "CHECKPOINT",
+            checkPointPassed: false,
+            gameId,
+            color,
+          },
+        }),
+    );
 
     if (unpassedCheckPoints > 0) return;
     await this.prisma.$transaction(async (tx) => {
