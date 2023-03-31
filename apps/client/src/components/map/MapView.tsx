@@ -278,7 +278,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
               </h1>
               <button
                 onClick={() => setSelectedPoint({ x: -1, y: -1 })}
-                className="badge badge-accent"
+                className="badge-accent badge"
               >
                 Reset Selection
               </button>
@@ -291,7 +291,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   !!selectedPointDetails?.prePlaced) && (
                   <button
                     onClick={handleRemove}
-                    className="badge badge-warning"
+                    className="badge-warning badge"
                   >
                     Remove
                   </button>
@@ -463,7 +463,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 (selectedMapItem === "NOT_SELECTED" &&
                   selectedNftJob === "NOT_SELECTED")
               }
-              className={clx("btn btn-accent mt-4")}
+              className={clx("btn-accent btn mt-4")}
             >
               Assign
             </button>
