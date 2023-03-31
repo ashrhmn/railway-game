@@ -369,7 +369,7 @@ export class NftService {
   });
 
   emit({ event, payload }: { event: string; payload?: any }) {
-    console.log("Secket : ", event);
+    console.log("Socket : ", event);
     this.socketService.socket?.emit(event, payload);
   }
 }

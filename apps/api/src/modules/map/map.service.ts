@@ -55,7 +55,7 @@ export class MapService {
     async ({ query: { skip, take, color, gameId } }, { user }) => {
       const data = await this.cacheService.getIfCached(
         `getPositions:${JSON.stringify({ skip, take, color, gameId, user })}`,
-        10,
+        1,
         () =>
           this.prisma.mapPosition.findMany({
             where: {
@@ -688,7 +688,7 @@ export class MapService {
                   where: { color: color, gameId: gameId },
                   orderBy: { createdAt: "desc" },
                 })}`,
-                5,
+                1,
                 () =>
                   tx.railPosition.findFirst({
                     where: { color: color, gameId: gameId },
@@ -825,7 +825,7 @@ export class MapService {
         where: { gameId, color },
         orderBy: { createdAt: "desc" },
       })}`,
-      5,
+      1,
       () =>
         this.prisma.railPosition.findFirst({
           where: { gameId, color },
@@ -1492,7 +1492,7 @@ export class MapService {
   }
 
   emit({ event, payload }: { event: string; payload: any }) {
-    console.log("Secket : ", event);
+    console.log("Socket : ", event);
     this.socketService.socket?.emit(event, payload);
   }
 
