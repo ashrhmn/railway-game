@@ -86,7 +86,10 @@ const UserPage: NextPage<Props> = ({ users: initialUsers, roles }) => {
         </>
       )}
       <div className="flex justify-end">
-        <button onClick={() => setIsAdding((v) => !v)} className="btn">
+        <button
+          onClick={() => setIsAdding((v) => !v)}
+          className="btn-accent btn-sm btn"
+        >
           Add User
         </button>
       </div>
@@ -110,13 +113,13 @@ const UserPage: NextPage<Props> = ({ users: initialUsers, roles }) => {
                 <td className="flex items-center gap-2">
                   <label
                     onClick={() => setEditingUser(user)}
-                    className="btn-secondary btn"
+                    className="btn-secondary btn-sm btn"
                     htmlFor="edit-modal"
                   >
                     Edit
                   </label>
                   <button
-                    className="btn-warning btn"
+                    className="btn-error btn-sm btn"
                     onClick={() => handleDeleteUser(user.id)}
                   >
                     Delete
