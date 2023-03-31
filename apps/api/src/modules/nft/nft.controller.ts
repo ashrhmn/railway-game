@@ -56,6 +56,7 @@ export class NftController {
     );
   }
 
+  @Roles("ADMIN")
   @InferMethod(endpoints.nft.updateNftsByPercentage)
   updateNftsByPercentage(@Context() context: IContext) {
     return createAsyncController(
