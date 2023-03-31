@@ -43,6 +43,12 @@ export type InferOutputs<IEndpoint> = PickSchemaType<
 >;
 export type InferOutputsPromise<IEndpoint> = Promise<InferOutputs<IEndpoint>>;
 
+const emptyStringToUndefined = z.literal("").transform(() => undefined);
+
+function optionalUndefinedString<T extends z.ZodTypeAny>(schema: T) {
+  return schema.optional().or(emptyStringToUndefined);
+}
+
 const ValidAddressSchema = <S>(schema: ZodType<S>) =>
   z.string().transform((v, c) => {
     try {
@@ -401,7 +407,7 @@ export const endpoints = {
           id: z.string(),
           username: z.string(),
           name: z.string().nullable(),
-          roles: z.string().array(),
+          roles: z.nativeEnum(ROLE).array(),
         })
         .array(),
       querySchema: SkipTakeSchema,
@@ -410,46 +416,64 @@ export const endpoints = {
       ...defaultConfig,
       pattern: "users",
       method: "POST",
-      bodySchema: z.object({
-        username: z
-          .string()
-          .min(3, "Username too short")
-          .max(20, "Username too long"),
-        name: z
-          .string()
-          .min(3, "Name too short")
-          .max(20, "Name too long")
-          .nullable(),
-        password: z
-          .string()
-          .min(3, "Password too short")
-          .max(20, "Password too long"),
-        roles: z.object({ id: z.number(), name: z.string() }).array(),
-      }),
+      bodySchema: z
+        .object({
+          username: z
+            .string()
+            .min(3, "Username too short")
+            .max(20, "Username too long"),
+          name: optionalUndefinedString(
+            z.string().min(3, "Name too short").max(20, "Name too long"),
+          ),
+          password: z
+            .string()
+            .min(3, "Password too short")
+            .max(20, "Password too long"),
+          confirmPassword: z
+            .string()
+            .min(3, "Password too short")
+            .max(20, "Password too long"),
+          roles: z.nativeEnum(ROLE).array(),
+        })
+        .refine((data) => data.confirmPassword === data.password, {
+          message: "Passwords do not match",
+          path: ["confirmPassword"],
+        }),
       responseSchema: z.string(),
     },
     updateUser: {
       ...defaultConfig,
       pattern: "users/:id",
       method: "PUT",
-      bodySchema: z.object({
-        username: z
-          .string()
-          .min(3, "Username too short")
-          .max(20, "Username too long")
-          .optional(),
-        name: z
-          .string()
-          .min(3, "Name too short")
-          .max(20, "Name too long")
-          .optional(),
-        password: z
-          .string()
-          .max(20, "Password too long")
-          .transform((v) => (v === "" ? undefined : v))
-          .optional(),
-        roles: z.object({ id: z.number(), name: z.string() }).array(),
-      }),
+      bodySchema: z
+        .object({
+          username: optionalUndefinedString(
+            z
+              .string()
+              .min(3, "Username too short")
+              .max(20, "Username too long"),
+          ),
+          name: optionalUndefinedString(
+            z.string().min(3, "Name too short").max(20, "Name too long"),
+          ),
+          password: optionalUndefinedString(
+            z
+              .string()
+              .min(3, "Password too short")
+              .max(20, "Password too long"),
+          ),
+          confirmPassword: optionalUndefinedString(
+            z
+              .string()
+              .min(3, "Password too short")
+              .max(20, "Password too long"),
+          ),
+          roles: z.nativeEnum(ROLE).array(),
+        })
+        .refine((data) => data.confirmPassword === data.password, {
+          message: "Passwords do not match",
+          path: ["confirmPassword"],
+        }),
       paramSchema: z.object({ id: z.string() }),
       responseSchema: z.string(),
     },
@@ -463,7 +487,7 @@ export const endpoints = {
     getRoles: {
       ...defaultConfig,
       pattern: "users/roles",
-      responseSchema: z.object({ id: z.number(), name: z.string() }).array(),
+      responseSchema: z.nativeEnum(ROLE).array(),
     },
   },
   settings: {

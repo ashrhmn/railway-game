@@ -6,7 +6,7 @@ import { promiseToast } from "@/utils/toast.utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { endpoints } from "api-interface";
 import React from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const updateUserSchema = endpoints.user.updateUser.bodySchema;
@@ -25,7 +25,8 @@ const EditUsersForm = ({ setUser, roles, refetch, user }: Props) => {
   const {
     handleSubmit,
     register,
-    control,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<IUpdateUserData>({
     resolver: zodResolver(updateUserSchema),
@@ -33,14 +34,11 @@ const EditUsersForm = ({ setUser, roles, refetch, user }: Props) => {
       name: user?.name || undefined,
       username: user?.username,
       password: undefined,
-      roles: user?.roles.map((name, id) => ({ name, id })),
+      roles: user?.roles,
     },
   });
-  const { append, remove } = useFieldArray({
-    control,
-    name: "roles",
-  });
-  const handleCreateUser = (data: IUpdateUserData) => {
+
+  const handleUpdateUser = (data: IUpdateUserData) => {
     if (!user) return;
     promiseToast(
       service(endpoints.user.updateUser)({
@@ -48,8 +46,8 @@ const EditUsersForm = ({ setUser, roles, refetch, user }: Props) => {
         param: { id: user.id },
       }),
       {
-        success: "User Created",
-        loading: "Creating user...",
+        success: "User Updated",
+        loading: "Updating user...",
       }
     )
       .then(refetch)
@@ -62,7 +60,7 @@ const EditUsersForm = ({ setUser, roles, refetch, user }: Props) => {
   return (
     <form
       className={clx("p-2 transition-all")}
-      onSubmit={handleSubmit(handleCreateUser)}
+      onSubmit={handleSubmit(handleUpdateUser)}
     >
       {!!user && (
         <>
@@ -95,7 +93,7 @@ const EditUsersForm = ({ setUser, roles, refetch, user }: Props) => {
               <span className="label-text">Password</span>
             </label>
             <input
-              type="text"
+              type="password"
               className="input-bordered input"
               {...register("password")}
             />
@@ -103,26 +101,47 @@ const EditUsersForm = ({ setUser, roles, refetch, user }: Props) => {
           </div>
           <div className="form-control">
             <label className="label">
+              <span className="label-text">Confirm Password</span>
+            </label>
+            <input
+              type="password"
+              className="input-bordered input"
+              {...register("confirmPassword")}
+            />
+            <p className="text-error">{errors.confirmPassword?.message}</p>
+          </div>
+          <div className="form-control">
+            <label className="label">
               <span className="label-text">Roles</span>
             </label>
             {roles.map((role) => (
-              <div className="my-1 flex gap-5 px-1" key={role.id}>
+              <div className="my-1 flex gap-5 px-1" key={role}>
                 <input
                   className="checkbox"
                   type="checkbox"
                   onChange={(e) =>
                     e.target.checked
-                      ? append({ id: role.id, name: role.name })
-                      : remove(role.id)
+                      ? setValue(
+                          "roles",
+                          Array.from(new Set([...getValues("roles"), role]))
+                        )
+                      : setValue(
+                          "roles",
+                          Array.from(
+                            new Set(
+                              getValues("roles").filter((r) => r !== role)
+                            )
+                          )
+                        )
                   }
-                  defaultChecked={user.roles.includes(role.name)}
+                  defaultChecked={user.roles.includes(role)}
                 />
-                <label>{role.name}</label>
+                <label>{role}</label>
               </div>
             ))}
           </div>
           <div className="modal-action">
-            <button type="submit" className="btn btn-primary mt-4 w-full">
+            <button type="submit" className="btn-primary btn mt-4 w-full">
               Update User
             </button>
           </div>

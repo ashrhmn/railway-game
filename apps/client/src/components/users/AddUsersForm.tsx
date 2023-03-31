@@ -7,7 +7,7 @@ import { XMarkIcon } from "@heroicons/react/24/solid";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { endpoints } from "api-interface";
 import React from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 const createUserSchema = endpoints.user.createUser.bodySchema;
@@ -24,15 +24,20 @@ const AddUsersForm = ({ setShow, show, roles, refetch }: Props) => {
   const {
     handleSubmit,
     register,
-    control,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<ICreateUserData>({
     resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      name: undefined,
+      username: undefined,
+      password: undefined,
+      confirmPassword: undefined,
+      roles: [],
+    },
   });
-  const { append, remove } = useFieldArray({
-    control,
-    name: "roles",
-  });
+
   const handleCreateUser = (data: ICreateUserData) => {
     promiseToast(service(endpoints.user.createUser)({ body: data }), {
       success: "User Created",
@@ -56,7 +61,7 @@ const AddUsersForm = ({ setShow, show, roles, refetch }: Props) => {
       <button
         type="reset"
         onClick={() => setShow((v) => !v)}
-        className="btn btn-xs btn-circle"
+        className="btn-xs btn-circle btn"
       >
         <XMarkIcon className="h-4 w-4" />
       </button>
@@ -88,7 +93,7 @@ const AddUsersForm = ({ setShow, show, roles, refetch }: Props) => {
           <span className="label-text">Password</span>
         </label>
         <input
-          type="text"
+          type="password"
           className="input-bordered input"
           {...register("password")}
         />
@@ -96,25 +101,39 @@ const AddUsersForm = ({ setShow, show, roles, refetch }: Props) => {
       </div>
       <div className="form-control">
         <label className="label">
+          <span className="label-text">Confirm Password</span>
+        </label>
+        <input
+          type="password"
+          className="input-bordered input"
+          {...register("confirmPassword")}
+        />
+        <p className="text-error">{errors.confirmPassword?.message}</p>
+      </div>
+      <div className="form-control">
+        <label className="label">
           <span className="label-text">Roles</span>
         </label>
         {roles.map((role) => (
-          <div className="my-1 flex gap-5 px-1" key={role.id}>
+          <div className="my-1 flex gap-5 px-1" key={role}>
             <input
               className="checkbox"
               type="checkbox"
               onChange={(e) =>
                 e.target.checked
-                  ? append({ id: role.id, name: role.name })
-                  : remove(role.id)
+                  ? setValue("roles", [...getValues("roles"), role])
+                  : setValue(
+                      "roles",
+                      getValues("roles").filter((r) => r !== role)
+                    )
               }
               defaultChecked={false}
             />
-            <label>{role.name}</label>
+            <label>{role}</label>
           </div>
         ))}
       </div>
-      <button type="submit" className="btn btn-primary mt-4 w-full">
+      <button type="submit" className="btn-primary btn mt-4 w-full">
         Create User
       </button>
     </form>

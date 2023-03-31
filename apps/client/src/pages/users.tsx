@@ -106,17 +106,17 @@ const UserPage: NextPage<Props> = ({ users: initialUsers, roles }) => {
               <tr key={user.id}>
                 <td>{user.username}</td>
                 <td>{user.name}</td>
-                <td>{user.roles.join(", ")}</td>
+                <td>{user.roles.sort().join(", ")}</td>
                 <td className="flex items-center gap-2">
                   <label
                     onClick={() => setEditingUser(user)}
-                    className="btn btn-secondary"
+                    className="btn-secondary btn"
                     htmlFor="edit-modal"
                   >
                     Edit
                   </label>
                   <button
-                    className="btn btn-warning"
+                    className="btn-warning btn"
                     onClick={() => handleDeleteUser(user.id)}
                   >
                     Delete
