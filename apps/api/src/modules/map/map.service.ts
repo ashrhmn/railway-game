@@ -1444,8 +1444,9 @@ export class MapService {
     await this.prisma.$transaction(async (tx) => {
       await tx.game.update({
         where: { id: gameId },
-        data: { status: GAME_STATUS.FINISHED, winnerTeam: color as COLOR },
+        data: { status: GAME_STATUS.FINISHED },
       });
+      await tx.winnerTeams.create({ data: { gameId, color } });
       await tx.nft.updateMany({
         data: { level: { increment: 1 } },
         where: { gameId, color: color as COLOR },
@@ -1459,6 +1460,8 @@ export class MapService {
           y: 14,
         })),
       });
+
+      await tx.mapPosition.deleteMany({ where: { gameId } });
 
       await tx.$executeRaw`
         UPDATE

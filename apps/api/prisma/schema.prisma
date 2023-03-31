@@ -152,7 +152,6 @@ model Game {
   id              String         @id @default(cuid())
   name            String
   status          GAME_STATUS
-  winnerTeam      COLOR?
   contractAddress String?        @map("contract_address")
   chainId         Int?           @map("chain_id")
   createdAt       DateTime       @default(now()) @map("created_at")
@@ -160,8 +159,20 @@ model Game {
   mapPositions    MapPosition[]
   nfts            Nft[]
   railPositions   RailPosition[]
+  winnerTeams     WinnerTeams[]
 
   @@map("games")
+}
+
+model WinnerTeams {
+  id        String   @id @default(cuid())
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameId    String   @map("game_id")
+  color     COLOR
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("winner_teams")
 }
 
 enum RAIL_DIRECTION {
