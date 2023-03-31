@@ -1492,6 +1492,7 @@ export class MapService {
   }
 
   emit({ event, payload }: { event: string; payload: any }) {
+    console.log("Secket : ", event);
     this.socketService.socket?.emit(event, payload);
   }
 
