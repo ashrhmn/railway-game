@@ -26,14 +26,14 @@ const SelectColorGame = ({
   if (!colors) return <div>Error retriving colors</div>;
   return (
     <div className="md:flex md:justify-end md:gap-2">
-      <div className="form-control w-full max-w-xs">
+      <div className="form-control w-full max-w-[10rem]">
         <label className="label">
           <span className="label-text">Select a Game</span>
         </label>
         <select
           value={selectedGameId}
           onChange={(e) => setSelectedGameId(e.target.value)}
-          className="select-bordered select"
+          className="select-bordered select select-sm"
         >
           {games.map((game) => (
             <option value={game.id} key={game.name}>
@@ -43,14 +43,14 @@ const SelectColorGame = ({
         </select>
       </div>
       {!hideColor && (
-        <div className="form-control w-full max-w-xs">
+        <div className="form-control w-full max-w-[10rem]">
           <label className="label">
             <span className="label-text">Select Map Color</span>
           </label>
           <select
             value={selectedColor}
             onChange={(e) => setSelectedColor(e.target.value)}
-            className="select-bordered select"
+            className="select-bordered select select-sm"
           >
             {colorAllOption && <option value={undefined}>All</option>}
             {colors.map((color) => (

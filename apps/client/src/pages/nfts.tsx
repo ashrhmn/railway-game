@@ -364,7 +364,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
 
           <div className="btn-group mt-8 flex flex-wrap items-center justify-end">
             {selectedPage > 5 && (
-              <button className="btn" onClick={() => setSelectedPage(1)}>
+              <button className="btn btn-sm" onClick={() => setSelectedPage(1)}>
                 First
               </button>
             )}
@@ -374,7 +374,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                 Math.abs(selectedPage - i) <= 5 ? (
                   <button
                     className={clx(
-                      "btn",
+                      "btn btn-sm",
                       selectedPage - 1 === i && "btn-active"
                     )}
                     key={i}
@@ -387,7 +387,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
             {selectedPage <
               Math.ceil((data?.count || 0) / itemsPerPageDelayed) - 6 && (
               <button
-                className="btn"
+                className="btn btn-sm"
                 onClick={() =>
                   setSelectedPage(
                     Math.ceil((data?.count || 0) / itemsPerPageDelayed)
@@ -406,7 +406,7 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                 onChange={(e) =>
                   setItemsPerPage(Math.max(e.target.valueAsNumber || 25, 25))
                 }
-                className="input-bordered input w-28"
+                className="input-bordered input input-sm w-28"
                 type="number"
               />
             </label>

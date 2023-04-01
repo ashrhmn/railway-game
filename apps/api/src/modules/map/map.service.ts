@@ -135,6 +135,7 @@ export class MapService {
         },
         update: { color: COLOR[color], x, y, gameId, ...payload },
       });
+
       return "success";
     },
   );
@@ -151,6 +152,7 @@ export class MapService {
         await tx.enemy.deleteMany({
           where: { positions: { none: { enemyId: { not: null } } } },
         });
+
         return "success";
       });
     },
@@ -199,6 +201,7 @@ export class MapService {
         },
       },
     });
+
     return "success";
   });
 
@@ -788,6 +791,7 @@ export class MapService {
             create: { color, gameId, x, y, nftId },
             update: { nftId, color, gameId, x, y },
           });
+
           return "placed";
         },
         { maxWait: 999999999999999, timeout: 999999999999999 },

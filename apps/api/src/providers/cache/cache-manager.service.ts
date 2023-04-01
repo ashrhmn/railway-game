@@ -13,7 +13,7 @@ export class CacheService {
     key: string,
     ttl: number,
     realTimeDataCb: () => Promise<T>,
-    updateInBackground = false
+    updateInBackground = false,
   ) {
     const updateCacheAndGetData = async () => {
       const newData = (await realTimeDataCb()) as T;

@@ -10,13 +10,24 @@ import { clx } from "@/utils/classname.utils";
 import { handleReqError } from "@/utils/error.utils";
 import { promiseToast } from "@/utils/toast.utils";
 import { timestamp } from "@/utils/date.utils";
+import { IPoint, Position } from "@/types";
 
 const GameView = () => {
   const { account } = useEthers();
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<COLOR | null>(null);
-  const [selectedPoint, setSelectedPoint] = useState({ x: -1, y: -1 });
-  const [selectedNftId, setSelectedNftId] = useState<string | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<IPoint>({ x: -1, y: -1 });
+  const [selectedNft, setSelectedNft] = useState<
+    null | Exclude<typeof nfts, undefined>["data"][number]
+  >(null);
+
+  const [additionalLightUpPositions, setAdditionalLightUpPositions] = useState<
+    IPoint[]
+  >([]);
+
+  useEffect(() => {
+    setAdditionalLightUpPositions([]);
+  }, [selectedColor, selectedGameId, selectedPoint, selectedNft, account]);
 
   const { data: allGames, status: allGameStatus } = useQuery({
     queryKey: ["games"],
@@ -70,7 +81,11 @@ const GameView = () => {
     enabled: !!selectedGameId && !!selectedColor,
   });
 
-  const { data: nfts, status: nftsFetchStatus } = useQuery({
+  const {
+    data: nfts,
+    status: nftsFetchStatus,
+    refetch: refetchNfts,
+  } = useQuery({
     queryKey: [
       "nfts",
       selectedColor || "",
@@ -85,13 +100,15 @@ const GameView = () => {
           owner: account || "",
           take: 1000,
         },
+      }).then((data) => {
+        if (selectedNft)
+          setSelectedNft(
+            data.data.find((n) => n.id === selectedNft.id) || null
+          );
+        return data;
       }),
     enabled: !!selectedGameId && !!selectedColor && !!account,
   });
-
-  const [selectedNft, setSelectedNft] = useState<
-    null | Exclude<typeof nfts, undefined>["data"][number]
-  >(null);
 
   const positions = useMemo(() => {
     if (!selectedGameId || !selectedColor) return [];
@@ -122,7 +139,7 @@ const GameView = () => {
   const handleAssignNft = useCallback(async () => {
     try {
       if (
-        !selectedNftId ||
+        !selectedNft ||
         !selectedColor ||
         !selectedGameId ||
         selectedPoint.x === -1 ||
@@ -135,12 +152,15 @@ const GameView = () => {
           body: {
             color: selectedColor,
             gameId: selectedGameId,
-            nftId: selectedNftId,
+            nftId: selectedNft.id,
             walletAddress: account,
             x: selectedPoint.x,
             y: selectedPoint.y,
+            additionalLightUpPositions,
           },
-        }),
+        })
+          .then(() => refetchMapPositions())
+          .then(() => refetchNfts()),
         {
           loading: "Placing NFT...",
           success: "NFT Placed",
@@ -151,9 +171,12 @@ const GameView = () => {
     }
   }, [
     account,
+    additionalLightUpPositions,
+    refetchMapPositions,
+    refetchNfts,
     selectedColor,
     selectedGameId,
-    selectedNftId,
+    selectedNft,
     selectedPoint.x,
     selectedPoint.y,
   ]);
@@ -213,16 +236,18 @@ const GameView = () => {
     return (
       <Wrapper>
         <div>
-          <h1>Select a Game</h1>
-          {allGames.map((game) => (
-            <div
-              onClick={() => setSelectedGameId(game.id)}
-              className="btn m-2 flex w-full flex-wrap"
-              key={game.id}
-            >
-              {game.name}
-            </div>
-          ))}
+          <h1 className="text-center">Select a Game</h1>
+          {allGames
+            .filter((game) => game.status === "RUNNING")
+            .map((game) => (
+              <button
+                onClick={() => setSelectedGameId(game.id)}
+                className="btn btn-wide btn-lg m-2 flex flex-wrap"
+                key={game.id}
+              >
+                {game.name}
+              </button>
+            ))}
         </div>
       </Wrapper>
     );
@@ -239,15 +264,15 @@ const GameView = () => {
           <div className="mb-2 flex justify-center">
             <button
               onClick={() => setSelectedGameId(null)}
-              className="btn-sm btn"
+              className="btn btn-sm"
             >
               Back
             </button>
           </div>
-          <h1>Select a color</h1>
+          <h1 className="text-center">Select a Map</h1>
           {colors.map((color) => (
             <div
-              className="btn m-2 flex w-full flex-wrap"
+              className="btn btn-wide m-2 flex flex-wrap"
               onClick={() => setSelectedColor(color)}
               key={color}
             >
@@ -277,19 +302,20 @@ const GameView = () => {
             <span className="font-bold">Direction</span> :{" "}
             {currentRailPosition.direction}
           </div>
-          {selectedPoint.x !== -1 && selectedPoint.y !== -1 && (
+          {((selectedPoint.x !== -1 && selectedPoint.y !== -1) ||
+            !!selectedNft) && (
             <button
               onClick={() => {
                 setSelectedPoint({ x: -1, y: -1 });
-                setSelectedNftId(null);
+                setSelectedNft(null);
               }}
-              className="btn-sm btn"
+              className="btn btn-sm"
             >
               Reset Selection
             </button>
           )}
           <button
-            className="btn-error btn-sm btn"
+            className="btn btn-error btn-sm"
             onClick={() => {
               setSelectedColor(null);
               setSelectedPoint({ x: -1, y: -1 });
@@ -312,7 +338,11 @@ const GameView = () => {
                         <div
                           className={clx(
                             "flex h-12 w-12 items-center justify-center text-xs transition-all",
-                            selectedPoint.x === p.x && selectedPoint.y === p.y
+                            (selectedPoint.x === p.x &&
+                              selectedPoint.y === p.y) ||
+                              additionalLightUpPositions.some(
+                                (lp) => lp.x === p.x && lp.y === p.y
+                              )
                               ? "bg-gray-400 dark:bg-gray-900"
                               : !p.isRevealed
                               ? "bg-white dark:bg-black"
@@ -331,12 +361,12 @@ const GameView = () => {
               {nfts.data.map((nft) => (
                 <button
                   onClick={() => {
-                    setSelectedNftId(nft.id);
+                    setSelectedNft(nft);
                     setSelectedNft(nft);
                   }}
                   className={clx(
-                    "btn-xs btn",
-                    selectedNftId === nft.id && "btn-accent"
+                    "btn btn-xs",
+                    selectedNft?.id === nft.id && "btn-accent"
                   )}
                   key={nft.id}
                 >
@@ -399,21 +429,125 @@ const GameView = () => {
                 <div>{`B: ${selectedNft.abilityB} L: ${selectedNft.abilityL} K: ${selectedNft.abilityK} R: ${selectedNft.abilityR}`}</div>
               </div>
             )}
+            {!!selectedPointDetails &&
+              !!selectedNft &&
+              selectedNft.job === "LIGHT" &&
+              selectedNft.abilityL > 1 && (
+                <>
+                  <h1 className="text-sm font-bold">
+                    Additional Light Up Positions
+                  </h1>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="flex">
+                      <AdditionalLightUpPositionSelector
+                        additionalLightUpPositions={additionalLightUpPositions}
+                        point={Position.from(selectedPoint).up().getPosition()}
+                        setAdditionalLightUpPositions={
+                          setAdditionalLightUpPositions
+                        }
+                      />
+                    </div>
+                    <div className="flex">
+                      <AdditionalLightUpPositionSelector
+                        additionalLightUpPositions={additionalLightUpPositions}
+                        point={Position.from(selectedPoint)
+                          .left()
+                          .getPosition()}
+                        setAdditionalLightUpPositions={
+                          setAdditionalLightUpPositions
+                        }
+                      />
+                      <AdditionalLightUpPositionSelector
+                        additionalLightUpPositions={additionalLightUpPositions}
+                        disabled
+                        point={selectedPoint}
+                        setAdditionalLightUpPositions={
+                          setAdditionalLightUpPositions
+                        }
+                      />
+                      <AdditionalLightUpPositionSelector
+                        additionalLightUpPositions={additionalLightUpPositions}
+                        point={Position.from(selectedPoint)
+                          .right()
+                          .getPosition()}
+                        setAdditionalLightUpPositions={
+                          setAdditionalLightUpPositions
+                        }
+                      />
+                    </div>
+                    <div>
+                      <AdditionalLightUpPositionSelector
+                        additionalLightUpPositions={additionalLightUpPositions}
+                        point={Position.from(selectedPoint)
+                          .down()
+                          .getPosition()}
+                        setAdditionalLightUpPositions={
+                          setAdditionalLightUpPositions
+                        }
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             {!!selectedNft &&
               selectedPoint.x !== -1 &&
               selectedPoint.y !== -1 && (
                 <button
                   onClick={handleAssignNft}
-                  className="btn-primary btn-sm btn"
+                  className="btn btn-primary btn-sm"
                 >
-                  Assign {selectedNft.job} on {selectedPoint.x},
-                  {selectedPoint.y}
+                  Assign {selectedNft.job} on
+                  {[selectedPoint, ...additionalLightUpPositions]
+                    .map(({ x, y }) => ` ${x},${y}`)
+                    .join(",")}
                 </button>
               )}
           </div>
         </div>
       </div>
     </Wrapper>
+  );
+};
+
+const AdditionalLightUpPositionSelector = ({
+  point,
+  disabled,
+  setAdditionalLightUpPositions,
+  additionalLightUpPositions,
+}: {
+  point: IPoint;
+  disabled?: boolean;
+  setAdditionalLightUpPositions: React.Dispatch<React.SetStateAction<IPoint[]>>;
+  additionalLightUpPositions: IPoint[];
+}) => {
+  const isPointValid = useMemo(
+    () => point.x >= 0 && point.y >= 0 && point.x <= 14 && point.y <= 14,
+    [point.x, point.y]
+  );
+  return (
+    <div
+      onClick={() => {
+        if (disabled || !isPointValid) return;
+        setAdditionalLightUpPositions((prev) => {
+          if (prev.some((p) => p.x === point.x && p.y === point.y)) {
+            return prev.filter((p) => p.x !== point.x || p.y !== point.y);
+          }
+          return [...prev, point];
+        });
+      }}
+      className={clx(
+        "flex h-12 w-12 select-none items-center justify-center text-xs",
+        disabled ||
+          additionalLightUpPositions.some(
+            (p) => p.x === point.x && p.y === point.y
+          )
+          ? "bg-neutral-focus/30"
+          : "bg-neutral-focus",
+        !disabled && isPointValid && "cursor-pointer"
+      )}
+    >
+      {isPointValid && `${point.x}, ${point.y}`}
+    </div>
   );
 };
 

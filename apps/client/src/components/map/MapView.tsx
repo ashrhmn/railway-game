@@ -363,7 +363,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
               <div className="flex gap-2">
                 <input
                   type="radio"
-                  name="radio-1"
+                  name="radio-item-type"
                   className="radio-accent radio"
                   checked={assigning === "FIXED"}
                   onChange={() => {
@@ -373,7 +373,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 />
                 <input
                   type="radio"
-                  name="radio-1"
+                  name="radio-item-type"
                   className="radio-accent radio"
                   checked={assigning === "ROAD"}
                   onChange={() => {
@@ -395,7 +395,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                     onChange={(e) =>
                       setSelectedMapItem(e.target.value as MAP_ITEMS)
                     }
-                    className="select-bordered select"
+                    className="select-bordered select select-sm"
                   >
                     <option disabled value="NOT_SELECTED">
                       Select an item
@@ -417,7 +417,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                       onChange={(e) =>
                         setSelectedMapItemVariant(e.target.value)
                       }
-                      className="select-bordered select"
+                      className="select-bordered select select-sm"
                     >
                       <option disabled value="NOT_SELECTED">
                         Select an item
@@ -440,7 +440,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 <select
                   value={selectedNftJob}
                   onChange={(e) => setSelectedNftJob(e.target.value)}
-                  className="select-bordered select"
+                  className="select-bordered select select-sm"
                 >
                   <option disabled value="NOT_SELECTED">
                     Select an item
@@ -463,7 +463,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 (selectedMapItem === "NOT_SELECTED" &&
                   selectedNftJob === "NOT_SELECTED")
               }
-              className={clx("btn-accent btn mt-4")}
+              className={clx("btn btn-accent btn-sm mt-4")}
             >
               Assign
             </button>
@@ -475,7 +475,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 <label className="label-text label">Enemy Name</label>
                 <input
                   type="text"
-                  className="input-bordered input"
+                  className="input-bordered input input-sm"
                   {...register("name")}
                 />
                 <p className="text-error">{errors.name?.message}</p>
@@ -484,12 +484,12 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 <label className="label-text label">Enemy Strength</label>
                 <input
                   type="number"
-                  className="input-bordered input"
+                  className="input-bordered input input-sm"
                   {...register("strength")}
                 />
                 <p className="text-error">{errors.strength?.message}</p>
               </div>
-              <button type="submit" className="btn mt-4">
+              <button type="submit" className="btn btn-sm mt-4">
                 Add Enemy
               </button>
             </form>
