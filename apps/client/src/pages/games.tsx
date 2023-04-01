@@ -12,6 +12,7 @@ import { handleReqError } from "@/utils/error.utils";
 import { useQuery } from "@tanstack/react-query";
 import { serverSideAuth } from "@/service/serverSideAuth";
 import { getAllGames, getAllGameStatus } from "@/service/game.service";
+import GameUpdateForm from "@/components/game/GameUpdateForm";
 
 type Props = {
   games: Awaited<ReturnType<typeof getAllGames>>;
@@ -69,7 +70,7 @@ const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
 
   return (
     <>
-      <UpdateForm
+      <GameUpdateForm
         editingItem={editingItem}
         setEditingItem={setEditingItem}
         allStatus={allStatus}
@@ -151,109 +152,6 @@ const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
         </table>
       </div>
     </>
-  );
-};
-
-const updateFormSchema = endpoints.game.updateGame.bodySchema;
-type UpdateFormData = z.infer<typeof updateFormSchema>;
-
-const UpdateForm = ({
-  editingItem,
-  setEditingItem,
-  allStatus,
-}: {
-  editingItem:
-    | Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number]
-    | null;
-  setEditingItem: Dispatch<
-    SetStateAction<
-      Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
-    >
-  >;
-  allStatus: Props["allStatus"];
-}) => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<UpdateFormData>({
-    resolver: zodResolver(updateFormSchema),
-    values: {
-      name: editingItem?.name || "",
-      contractAddress: editingItem?.contractAddress || "",
-    },
-  });
-
-  const handleUpdateGame = (data: UpdateFormData) => {
-    if (!editingItem) return;
-    promiseToast(
-      service(endpoints.game.updateGame)({
-        body: data,
-        param: { id: editingItem.id },
-      }).then(() => setEditingItem(null)),
-      { loading: "Updating Game", success: "Game Updated" }
-    ).catch(handleReqError);
-  };
-  return (
-    <form
-      onSubmit={handleSubmit(handleUpdateGame)}
-      className={clx(
-        "form-control fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs bg-slate-600 p-4 transition-all",
-        !editingItem && "translate-x-full"
-      )}
-    >
-      <button
-        type="reset"
-        onClick={() => setEditingItem(null)}
-        className="btn-xs btn-circle btn"
-      >
-        <XMarkIcon className="h-4 w-4" />
-      </button>
-      <label className="label">
-        <span className="label-text">Game Name</span>
-      </label>
-      <input
-        className="input-bordered input w-full max-w-xs"
-        type="text"
-        {...register("name")}
-      />
-      <p className="mt-2 text-error">{errors.name?.message}</p>
-      <label className="label">
-        <span className="label-text">NFT Contract Address</span>
-      </label>
-      <input
-        className="input-bordered input w-full max-w-xs"
-        type="text"
-        {...register("contractAddress")}
-      />
-      <p className="mt-2 text-error">{errors.contractAddress?.message}</p>
-      <label className="label">
-        <span className="label-text">Game Status</span>
-      </label>
-      <select className="select" {...register("status")}>
-        {!!allStatus &&
-          allStatus.map((status) => (
-            <option key={status.id} value={status.name}>
-              {status.name}
-            </option>
-          ))}
-      </select>
-      <p className="mt-2 text-error">{errors.status?.message}</p>
-      <label className="label">
-        <span className="label-text">Chain ID</span>
-      </label>
-      <input
-        className="input-bordered input w-full max-w-xs"
-        type="text"
-        {...register("chainId")}
-      />
-      <p className="mt-2 text-error">{errors.chainId?.message}</p>
-      <input
-        className="btn mt-4 w-full max-w-xs"
-        type="submit"
-        value="Update Game"
-      />
-    </form>
   );
 };
 
