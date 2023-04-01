@@ -9,6 +9,7 @@ services:
       - 4000:4000
     container_name: railway-game
     restart: unless-stopped
+    mem_limit: 300m
     env_file:
       - .env
   redis:
