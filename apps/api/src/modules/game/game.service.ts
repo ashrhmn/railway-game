@@ -15,8 +15,20 @@ export class GameService {
 
   getAll = createAsyncService<typeof endpoints.game.getAll>(
     async ({ query: { skip, take } }) => {
-      const games = await this.prisma.game.findMany({ skip, take });
-      return games;
+      return await this.prisma.game.findMany({
+        skip,
+        take,
+        include: {
+          _count: {
+            select: {
+              nfts: true,
+              mapPositions: true,
+              railPositions: true,
+              winnerTeams: true,
+            },
+          },
+        },
+      });
     },
   );
 
@@ -114,6 +126,19 @@ export class GameService {
       })
       .then((res) => res.map((r) => r.color));
   });
+
+  deleteGame = createAsyncService<typeof endpoints.game.deleteGame>(
+    async ({ param: { id } }) => {
+      return this.prisma.$transaction(async (tx) => {
+        await tx.mapPosition.deleteMany({ where: { gameId: id } });
+        await tx.railPosition.deleteMany({ where: { gameId: id } });
+        await tx.nft.deleteMany({ where: { gameId: id } });
+        await tx.winnerTeams.deleteMany({ where: { gameId: id } });
+        await tx.game.delete({ where: { id } });
+        return "deleted";
+      });
+    },
+  );
 
   emit({ event, payload }: { event: string; payload?: any }) {
     console.log("Socket : ", event);

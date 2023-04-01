@@ -65,4 +65,13 @@ export class GameController {
       this.gameService.getColorsAvailableForWalletByGameId,
     );
   }
+
+  @InferMethod(endpoints.game.deleteGame)
+  deleteGame(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.game.deleteGame,
+      context,
+      this.gameService.deleteGame,
+    );
+  }
 }

@@ -1,5 +1,5 @@
 import { ZodType, z } from "zod";
-import { getAddress } from "ethers/lib/utils";
+import { getAddress, isAddress } from "ethers/lib/utils";
 import {
   MAP_ITEMS,
   COLOR,
@@ -335,6 +335,12 @@ export const endpoints = {
           contractAddress: z.string().nullable(),
           chainId: z.number().nullable(),
           status: z.string(),
+          _count: z.object({
+            mapPositions: z.number(),
+            nfts: z.number(),
+            railPositions: z.number(),
+            winnerTeams: z.number(),
+          }),
         })
         .passthrough()
         .array(),
@@ -346,8 +352,14 @@ export const endpoints = {
       method: "POST",
       bodySchema: z.object({
         name: z.string().min(3, "Name too short").max(20, "Name too long"),
-        contractAddress: ValidAddressSchema(z.string().optional()),
-        chainId: z.coerce.number().optional(),
+        contractAddress: optionalUndefinedString(
+          z
+            .string()
+            .refine((data) => isAddress(data), "Invalid contract address"),
+        ),
+        chainId: z.coerce
+          .number({ invalid_type_error: "Invalid Chain ID" })
+          .optional(),
       }),
       responseSchema: z.string(),
     },
@@ -365,6 +377,13 @@ export const endpoints = {
           .transform((v) => (!!v ? v : undefined)),
         chainId: z.coerce.number().optional(),
       }),
+      paramSchema: z.object({ id: z.string() }),
+      responseSchema: z.string(),
+    },
+    deleteGame: {
+      ...defaultConfig,
+      pattern: "games/:id",
+      method: "DELETE",
       paramSchema: z.object({ id: z.string() }),
       responseSchema: z.string(),
     },

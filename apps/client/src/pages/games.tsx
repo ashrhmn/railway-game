@@ -65,7 +65,7 @@ const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
       })
       .catch(handleReqError);
   };
-  if (!initialGames) return <div>Error retriving games</div>;
+  if (!games) return <div>Error retriving games</div>;
 
   return (
     <>
@@ -144,6 +144,7 @@ const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
                   key={game.id}
                   game={game}
                   setEditingItem={setEditingItem}
+                  refetch={refetch}
                 />
               ))}
           </tbody>
@@ -259,6 +260,7 @@ const UpdateForm = ({
 const GameItemRow = ({
   game,
   setEditingItem,
+  refetch,
 }: {
   game: Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number];
   setEditingItem: Dispatch<
@@ -266,7 +268,18 @@ const GameItemRow = ({
       Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
     >
   >;
+  refetch: () => void;
 }) => {
+  const handleDelete = () =>
+    promiseToast(
+      service(endpoints.game.deleteGame)({ param: { id: game.id } })
+        .then(refetch)
+        .catch(handleReqError),
+      {
+        loading: "Deleting...",
+        success: "Deleted",
+      }
+    );
   return (
     <>
       <tr>
@@ -274,13 +287,56 @@ const GameItemRow = ({
         <td>{game.contractAddress}</td>
         <td>{game.chainId}</td>
         <td>{game.status}</td>
-        <td>
+        <td className="flex items-center gap-1">
           <button
             onClick={() => setEditingItem(game)}
-            className="btn-accent btn"
+            className="btn-accent btn-sm btn"
           >
             Edit
           </button>
+          <div>
+            <label
+              htmlFor={`delete-game-modal-${game.id}`}
+              className="btn-error btn-sm btn"
+            >
+              Delete
+            </label>
+            <input
+              type="checkbox"
+              id={`delete-game-modal-${game.id}`}
+              className="modal-toggle"
+            />
+            <label
+              htmlFor={`delete-game-modal-${game.id}`}
+              className="modal cursor-pointer"
+            >
+              <label className="modal-box relative" htmlFor="">
+                <h3 className="text-lg font-bold">
+                  Are you sure want to delete the game {game.name || game.id}
+                </h3>
+                <p className="py-4">
+                  This will also delete all the NFTs and history along with it
+                  <br />
+                  NFTs : {game._count.nfts}
+                  <br />
+                  Map Position : {game._count.mapPositions}
+                  <br />
+                  Rail Position : {game._count.railPositions}
+                  <br />
+                  Winner Teams : {game._count.winnerTeams}
+                </p>
+                <div className="modal-action">
+                  <label
+                    htmlFor={`delete-game-modal-${game.id}`}
+                    className="btn-error btn"
+                    onClick={handleDelete}
+                  >
+                    Confirm Delete
+                  </label>
+                </div>
+              </label>
+            </label>
+          </div>
         </td>
       </tr>
     </>

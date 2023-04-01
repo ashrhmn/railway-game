@@ -317,21 +317,11 @@ export class NftService {
         await tx.nft.updateMany({ data: { flag: true }, where: { gameId } });
         const total = await tx.nft.count({ where: { gameId } });
         for (const { percentage, job } of jobs) {
-          // console.log({
-          //   job,
-          //   percentage,
-          //   remainder:
-          //     (percentage * total) % (100 * Object.values(COLOR).length),
-          //   left: percentage * total,
-          //   right: 100 * Object.values(COLOR).length,
-          // });
-          // console.log((percentage * total) % (100 * Object.values(COLOR).length));
           if (!!((percentage * total) % (100 * Object.values(COLOR).length)))
             throw new BadRequestException(
               `Total number of nfts per color must be a rounded number, Error on ${job}`,
             );
           const limit = (percentage / 100) * total;
-          // console.log({ limit });
           const unknownIds =
             await tx.$queryRaw`SELECT id FROM public.nfts WHERE game_id = ${gameId} AND flag = true ORDER BY RANDOM() LIMIT ${limit}`;
           const ids = z
@@ -341,8 +331,6 @@ export class NftService {
             .map(({ id }) => id);
 
           if (ids.length === 0) continue;
-
-          // console.log(ids.length);
 
           for (const [index, color] of Object.values(COLOR).entries()) {
             await tx.nft.updateMany({
