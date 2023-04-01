@@ -58,7 +58,6 @@ const Map: NextPage<Props> = ({
       />
       {!!selectedColor && !!selectedGameId && (
         <MapView
-          key={selectedGameId + selectedColor}
           color={selectedColor}
           gameId={selectedGameId}
           mapItems={mapItems}

@@ -293,18 +293,18 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
           <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
             <button
               onClick={() => setShowAddForm((v) => !v)}
-              className="btn-outline btn btn-accent"
+              className="btn-outline btn btn-accent btn-sm"
             >
               Add
             </button>
 
-            <label htmlFor="delete-modal" className="btn btn-error">
+            <label htmlFor="delete-modal" className="btn btn-error btn-sm">
               Delete
             </label>
-            <button onClick={handleRandomizeTokenId} className="btn">
+            <label htmlFor="randomize-tokenids-modal" className="btn btn-sm">
               Randomize Token ID
-            </button>
-            <button onClick={handleRefreshOwners} className="btn">
+            </label>
+            <button onClick={handleRefreshOwners} className="btn btn-sm">
               Refresh Owners
             </button>
             <input type="checkbox" id="delete-modal" className="modal-toggle" />
@@ -322,7 +322,40 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
                     htmlFor="delete-modal"
                     className="btn btn-warning"
                   >
-                    Confirm
+                    Confirm Delete
+                  </label>
+                </div>
+              </label>
+            </label>
+            <input
+              type="checkbox"
+              id="randomize-tokenids-modal"
+              className="modal-toggle"
+            />
+            <label
+              htmlFor="randomize-tokenids-modal"
+              className="modal cursor-pointer"
+            >
+              <label className="modal-box relative" htmlFor="">
+                <h3 className="text-lg font-bold">
+                  Are you sure you want to randomize Token Id for all nfts from{" "}
+                  {games?.find((g) => g.id === selectedGameId)?.name ||
+                    selectedGameId}
+                  ?
+                </h3>
+                <p>
+                  This will remove all the owner information from all the NFTs
+                  for this game, start refetching and updating them in the
+                  background. So, players might not be able to use their NFTs
+                  which are not updated by the process yet.
+                </p>
+                <div className="modal-action">
+                  <label
+                    onClick={handleRandomizeTokenId}
+                    htmlFor="randomize-tokenids-modal"
+                    className="btn btn-warning"
+                  >
+                    Confirm Randomize Token IDs
                   </label>
                 </div>
               </label>
