@@ -5,6 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { COLOR, GAME_STATUS } from "@prisma/client";
 import { Position } from "src/classes/Position";
 import { SocketService } from "../socket/socket.service";
+import { CONFIG } from "src/config/app.config";
 
 @Injectable()
 export class GameService {
@@ -34,6 +35,8 @@ export class GameService {
 
   createGame = createAsyncService<typeof endpoints.game.createGame>(
     async ({ body: { name, contractAddress, chainId } }) => {
+      if (chainId !== undefined && !CONFIG.SUPPORTED_CHAINS.includes(chainId))
+        throw new BadRequestException("Invalid Chain Id");
       return this.prisma.$transaction(async (tx) => {
         const game = await tx.game.create({
           data: { name, contractAddress, status: "WAITING", chainId },
@@ -76,6 +79,11 @@ export class GameService {
 
   updateGame = createAsyncService<typeof endpoints.game.updateGame>(
     async ({ body, param: { id } }) => {
+      if (
+        body.chainId !== undefined &&
+        !CONFIG.SUPPORTED_CHAINS.includes(body.chainId)
+      )
+        throw new BadRequestException("Invalid Chain Id");
       if (!!body.status && !Object.keys(GAME_STATUS).includes(body.status))
         throw new BadRequestException("Invalid Game Status");
       await this.prisma.game.update({

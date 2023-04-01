@@ -275,7 +275,7 @@ export const endpoints = {
         y: z.number().min(0).max(14),
         color: z.string(),
         gameId: z.string(),
-        strength: z.coerce.number().min(1),
+        strength: z.coerce.number().min(1, "Enemy Strength must be at least 1"),
         name: z.string().min(1),
       }),
       responseSchema: z.string(),
