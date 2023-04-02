@@ -11,7 +11,10 @@ export class MetadataService {
     async ({ query: { address, network, tokenId } }) => {
       const nft = await this.prisma.nft.findFirst({
         where: {
-          game: { contractAddress: address, chainId: network },
+          game: {
+            contractAddress: { equals: address, mode: "insensitive" },
+            chainId: network,
+          },
           tokenId,
         },
         select: {
@@ -63,7 +66,10 @@ export class MetadataService {
         .catch(() => null);
       if (!!proxiedData) return proxiedData;
       const game = await this.prisma.game.findFirst({
-        where: { contractAddress: address, chainId: network },
+        where: {
+          contractAddress: { equals: address, mode: "insensitive" },
+          chainId: network,
+        },
       });
       if (!game) throw new NotFoundException();
       return {
