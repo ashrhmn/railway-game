@@ -56,9 +56,11 @@ export class MetadataService {
     async ({ query: { address, network, royalty } }) => {
       const proxiedData = await fetch(
         `https://hydromint.xyz/api/v1/contract-uri?address=${address}&network=${network}&royalty=${royalty}`,
-      ).then((res) => {
-        return res.json().catch(() => null) as any;
-      });
+      )
+        .then((res) => {
+          return res.json().catch(() => null) as any;
+        })
+        .catch(() => null);
       if (!!proxiedData) return proxiedData;
       const game = await this.prisma.game.findFirst({
         where: { contractAddress: address, chainId: network },
