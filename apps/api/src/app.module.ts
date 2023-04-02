@@ -20,6 +20,8 @@ import { UserModule } from "./modules/user/user.module";
 import * as redisStore from "cache-manager-redis-store";
 import { CacheManagerModule } from "./providers/cache/cache-manager.module";
 import { MetadataModule } from "./modules/metadata/metadata.module";
+import { BullModule } from "@nestjs/bull";
+import { JobModule } from "./providers/jobs/job.module";
 
 @Module({
   imports: [
@@ -33,6 +35,7 @@ import { MetadataModule } from "./modules/metadata/metadata.module";
     MetadataModule,
     ScheduleModule.forRoot(),
     SocketModule,
+    JobModule,
     CacheModule.register({
       store: redisStore.create({
         host: process.env.REDIS_HOST || "localhost",
@@ -41,6 +44,11 @@ import { MetadataModule } from "./modules/metadata/metadata.module";
       }),
       isGlobal: true,
       ttl: 10,
+    }),
+    BullModule.forRoot({
+      url: `redis://${process.env.REDIS_HOST || "localhost"}:${+(
+        process.env.REDIS_PORT || "6379"
+      )}`,
     }),
     CacheManagerModule,
   ],

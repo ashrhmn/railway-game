@@ -22,6 +22,10 @@ import { SETTINGS_KEY } from "src/enums/settings-key.enum";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { SocketService } from "../socket/socket.service";
 import { CacheService } from "src/providers/cache/cache-manager.service";
+import { InjectQueue } from "@nestjs/bull";
+import { QueueJobEnum } from "src/enums/queue-job.enum";
+import { Queue } from "bull";
+import { IRailMoveJobData } from "src/providers/jobs/rail-move-job.processor";
 
 @Injectable()
 export class MapService {
@@ -29,6 +33,8 @@ export class MapService {
     private readonly prisma: PrismaService,
     private readonly socketService: SocketService,
     private readonly cacheService: CacheService,
+    @InjectQueue(QueueJobEnum.CHECK_AND_MOVE_RAIL_BY_GAME_COLOR)
+    private readonly checkAndMoveRailJob: Queue<IRailMoveJobData>,
   ) {}
   getColors = createService<typeof endpoints.map.getColors>(() => {
     return Object.values(COLOR);
@@ -50,6 +56,22 @@ export class MapService {
       );
     },
   );
+
+  async getRailMovementLockTime() {
+    const railMovementLockTime = await this.cacheService.getIfCached(
+      `Settings:RAIL_MOVEMENT_LOCK_TIME`,
+      30,
+      () =>
+        this.prisma.settings.findUnique({
+          where: { key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME },
+          select: { numValue: true },
+        }),
+    );
+    if (!railMovementLockTime || !railMovementLockTime.numValue)
+      throw new Error("Rail movement lock time not set");
+
+    return railMovementLockTime.numValue;
+  }
 
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
     async ({ query: { skip, take, color, gameId } }, { user }) => {
@@ -800,14 +822,14 @@ export class MapService {
       eventParams.forEach((params) => {
         this.emit(WS_EVENTS.MAP_POSITIONS_UPDATED(...params));
       });
-
+      this.checkAndMoveRailByGameIdAndColor(gameId, COLOR[color]);
       return res;
     },
   );
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   async checkAndMoveRail() {
-    console.log("checkAndMoveRail");
+    console.log("\n\ncheckAndMoveRail - cron");
     const runningGames = await this.cacheService.getIfCached(
       `running-games`,
       30,
@@ -838,42 +860,24 @@ export class MapService {
     );
 
     if (!currentRailPosition) {
-      console.warn(
-        `Current Rail Position not found for game: ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
-      );
+      console.warn(`Current Rail Position not found ${gameId} ${color}`);
       return;
     }
 
-    const railMovementLockTime = await this.cacheService.getIfCached(
-      `Settings:RAIL_MOVEMENT_LOCK_TIME`,
-      30,
-      () =>
-        this.prisma.settings.findUnique({
-          where: { key: SETTINGS_KEY.RAIL_MOVEMENT_LOCK_TIME },
-          select: { numValue: true },
-        }),
+    const railMovementLockTime = await this.getRailMovementLockTime().catch(
+      () => null,
     );
 
-    if (!railMovementLockTime || !railMovementLockTime.numValue) {
+    if (!railMovementLockTime) {
       console.info(`Rail movement lock time is not set`);
       return;
     }
 
     if (
       Math.round(currentRailPosition.createdAt.valueOf() / 1000) >
-      timestamp() - railMovementLockTime.numValue
+      timestamp() - railMovementLockTime
     ) {
-      console.info(
-        `Rail is not ready to move yet for game: ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
-      );
+      console.info(`Rail is not ready to move yet  ${gameId} ${color}`);
       return;
     }
 
@@ -909,20 +913,14 @@ export class MapService {
         : null;
 
     if (!nextPosition || !oppositeDirection) {
-      console.warn(
-        `Invalid Rail Direction: ${JSON.stringify({ gameId, color }, null, 2)}`,
-      );
+      console.warn(`Invalid Rail Direction:  ${gameId} ${color}`);
       return;
     }
 
     const { x, y } = nextPosition.getPosition();
     if (x < 0 || y < 0 || x > 14 || y > 14) {
       console.log(
-        `Colided with outer box, turning 180 degree ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
+        `Colided with outer box, turning 180 degree ${gameId} ${color}`,
       );
       await this.prisma.railPosition.create({
         data: {
@@ -958,21 +956,14 @@ export class MapService {
 
     if (!nextMapPosition) {
       console.warn(
-        `Next Rail Position ${{
-          x,
-          y,
-        }} not found for game: ${gameId}, color: ${color}`,
+        `Next Rail Position ${x},${y} not found  ${gameId} ${color}`,
       );
       return;
     }
 
     if (nextMapPosition.mapItem === "MOUNTAIN") {
       console.log(
-        `Colided with mountain, turning 180 degree ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
+        `Colided with mountain, turning 180 degree ${gameId} ${color}`,
       );
       await this.prisma.railPosition.create({
         data: {
@@ -999,11 +990,7 @@ export class MapService {
         nextMapPosition.bridgeConstructedOn === 0)
     ) {
       console.log(
-        `Colided with river with no bridge constructed, turning 180 degree ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
+        `Colided with river with no bridge constructed, turning 180 degree ${gameId} ${color}`,
       );
       await this.prisma.railPosition.create({
         data: {
@@ -1026,11 +1013,7 @@ export class MapService {
 
     if (!!nextMapPosition.enemy && nextMapPosition.enemy.currentStrength > 0) {
       console.log(
-        `Colided with undefeated enemy, turning 180 degree ${JSON.stringify(
-          { gameId, color },
-          null,
-          2,
-        )}`,
+        `Colided with undefeated enemy, turning 180 degree ${gameId} ${color}`,
       );
       await this.prisma.railPosition.create({
         data: {
@@ -1085,6 +1068,24 @@ export class MapService {
           2,
         )}`,
       );
+      if (nextMapPosition.railConstructedOn !== 0) {
+        const delay = (nextMapPosition.railConstructedOn - timestamp()) * 1000;
+        console.log(
+          "Adding job to check and move rail (on next rail road construction)",
+          color,
+          gameId,
+          delay / 1000,
+          "s later",
+        );
+        await this.checkAndMoveRailJob.add(
+          { color, gameId },
+          {
+            delay,
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        );
+      }
       return;
     }
 
@@ -1093,7 +1094,7 @@ export class MapService {
         nextPositionNftJob === "RAIL_4_6" ||
         nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
-        console.log(`Going left ${JSON.stringify({ gameId, color }, null, 2)}`);
+        console.log(`Going left ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1104,13 +1105,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_2_6") {
-        console.log(
-          `Going left,turning down ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going left,turning down ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1121,13 +1116,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_6_8") {
-        console.log(
-          `Going left, turning up ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going left, turning up ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1154,9 +1143,7 @@ export class MapService {
         nextPositionNftJob === "RAIL_4_6" ||
         nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
-        console.log(
-          `Going right ${JSON.stringify({ gameId, color }, null, 2)}`,
-        );
+        console.log(`Going right ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1167,13 +1154,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_2_4") {
-        console.log(
-          `Going right, turning down ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going right, turning down ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1184,13 +1165,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_4_8") {
-        console.log(
-          `Going right, turning up ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going right, turning up ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1217,7 +1192,7 @@ export class MapService {
         nextPositionNftJob === "RAIL_2_8" ||
         nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
-        console.log(`Going up ${JSON.stringify({ gameId, color }, null, 2)}`);
+        console.log(`Going up ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1228,13 +1203,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_2_6") {
-        console.log(
-          `Going up, turning right ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going up, turning right ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1245,13 +1214,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_2_4") {
-        console.log(
-          `Going up, turning left ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going up, turning left ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1278,7 +1241,7 @@ export class MapService {
         nextPositionNftJob === "RAIL_2_8" ||
         nextPositionNftJob === "RAIL_2_4_6_8"
       ) {
-        console.log(`Going down ${JSON.stringify({ gameId, color }, null, 2)}`);
+        console.log(`Going down ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1289,13 +1252,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_6_8") {
-        console.log(
-          `Going down, turning right ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going down, turning right ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1306,13 +1263,7 @@ export class MapService {
         );
       }
       if (nextPositionNftJob === "RAIL_4_8") {
-        console.log(
-          `Going down, turning left ${JSON.stringify(
-            { gameId, color },
-            null,
-            2,
-          )}`,
-        );
+        console.log(`Going down, turning left ${gameId} ${color}`);
         return await this.onPositionChange(
           color,
           gameId,
@@ -1345,9 +1296,9 @@ export class MapService {
   ) {
     const eventParams: Parameters<typeof WS_EVENTS.MAP_POSITIONS_UPDATED>[] =
       [];
-    const res = await this.prisma.$transaction(
+    const { newRailPosition } = await this.prisma.$transaction(
       async (tx) => {
-        await tx.railPosition.create({
+        const newRailPosition = await tx.railPosition.create({
           data: { color, gameId, direction, x, y },
         });
         if (mapItem === "CHECKPOINT") {
@@ -1408,6 +1359,7 @@ export class MapService {
           { color, gameId },
           { x, y, message: "POSITIONS_REVEALED", positions: positionsToReveal },
         ]);
+        return { newRailPosition };
       },
       { maxWait: 999999999999999, timeout: 999999999999999 },
     );
@@ -1418,7 +1370,32 @@ export class MapService {
       WS_EVENTS.RAIL_POSITION_CHANGED({ color, gameId }, { x, y, direction }),
     );
     if (x === 0 && y === 0) this.checkWinner(color, gameId, x, y);
-    return res;
+    const railMovementLockTime = await this.getRailMovementLockTime().catch(
+      () => null,
+    );
+    if (railMovementLockTime) {
+      const unlockTime = Math.round(
+        newRailPosition.createdAt.valueOf() / 1000 + railMovementLockTime,
+      );
+      const delay = (unlockTime - timestamp()) * 1000;
+      console.log(
+        "Adding job to check and move rail",
+        color,
+        gameId,
+        delay / 1000,
+        "s later",
+      );
+      await this.checkAndMoveRailJob
+        .add(
+          { color, gameId },
+          {
+            delay,
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        )
+        .catch(console.error);
+    }
   }
 
   async checkWinner(color: COLOR, gameId: string, x: number, y: number) {
