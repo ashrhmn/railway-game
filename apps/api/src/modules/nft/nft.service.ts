@@ -132,29 +132,43 @@ export class NftService {
         await tx.nft.deleteMany({ where: { gameId: game_id } });
       }
       await tx.nft.createMany({
-        data: data.map(({ description, image, name, ...meta }) => ({
-          gameId: game_id,
-          color: COLOR[meta.color],
-          level: meta.level,
-          abilityR: meta.r,
-          abilityB: meta.b,
-          abilityK: meta.k,
-          abilityL: meta.l,
-          name,
-          description,
-          image,
-          job: NFT_JOB[meta.job],
-          metadata: Object.keys(meta).reduce(
-            (prev, curr) => [
-              ...prev,
-              {
-                type: curr,
-                value: meta[curr] as any,
-              },
-            ],
-            [],
-          ),
-        })),
+        data: data.map(
+          ({
+            description,
+            image,
+            name,
+            color,
+            job,
+            level,
+            b,
+            l,
+            k,
+            r,
+            ...meta
+          }) => ({
+            gameId: game_id,
+            color: COLOR[color],
+            level: level,
+            abilityR: r,
+            abilityB: b,
+            abilityK: k,
+            abilityL: l,
+            name,
+            description,
+            image,
+            job: NFT_JOB[job],
+            metadata: Object.keys(meta).reduce(
+              (prev, curr) => [
+                ...prev,
+                {
+                  type: curr,
+                  value: meta[curr] as any,
+                },
+              ],
+              [],
+            ),
+          }),
+        ),
       });
 
       return "added";

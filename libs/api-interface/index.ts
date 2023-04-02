@@ -83,6 +83,11 @@ const NFTResponseSchema = z
   })
   .passthrough();
 
+const nftMetadataAttributeSchema = z.object({
+  trait_type: z.string().nullable().optional(),
+  value: z.any(),
+});
+
 const SkipTakeSchema = z.object({
   skip: z.coerce.number().optional().default(0),
   take: z.coerce.number().optional().default(255),
@@ -555,6 +560,44 @@ export const endpoints = {
           abilityR_Max: z.number(),
         })
         .array(),
+    },
+  },
+  metadata: {
+    tokenUri: {
+      ...defaultConfig,
+      pattern: "metadata/token-uri",
+      querySchema: z.object({
+        tokenId: z.coerce.number(),
+        network: z.coerce.number(),
+        address: z
+          .string()
+          .refine((v) => isAddress(v), { message: "Invalid address" }),
+      }),
+      responseSchema: z.object({
+        name: z.string().nullable(),
+        description: z.string().nullable(),
+        image: z.string().nullable(),
+        attributes: nftMetadataAttributeSchema.array(),
+        traits: nftMetadataAttributeSchema.array(),
+      }),
+    },
+    contractUri: {
+      ...defaultConfig,
+      pattern: "metadata/contract-uri",
+      querySchema: z.object({
+        royalty: z.coerce.number(),
+        network: z.coerce.number(),
+        address: z
+          .string()
+          .refine((v) => isAddress(v), { message: "Invalid address" }),
+      }),
+      responseSchema: z.object({
+        name: z.string().nullable(),
+        description: z.string().nullable(),
+        image: z.string().nullable(),
+        seller_fee_basis_points: z.number(),
+        fee_recipient: z.string(),
+      }),
     },
   },
 } as const;

@@ -19,6 +19,7 @@ import { SocketModule } from "./modules/socket/socket.module";
 import { UserModule } from "./modules/user/user.module";
 import * as redisStore from "cache-manager-redis-store";
 import { CacheManagerModule } from "./providers/cache/cache-manager.module";
+import { MetadataModule } from "./modules/metadata/metadata.module";
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CacheManagerModule } from "./providers/cache/cache-manager.module";
     GameModule,
     UserModule,
     SettingsModule,
+    MetadataModule,
     ScheduleModule.forRoot(),
     SocketModule,
     CacheModule.register({
