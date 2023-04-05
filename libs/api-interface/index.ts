@@ -238,6 +238,7 @@ export const endpoints = {
               currentStrength: z.number(),
               _count: z.object({ positions: z.number() }),
             })
+            .transform((data) => (data.currentStrength === 0 ? null : data))
             .nullable(),
         })
         .passthrough()
