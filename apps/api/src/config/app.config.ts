@@ -20,6 +20,9 @@ export const CONFIG = {
     },
   },
   NODE_ENV: process.env.NODE_ENV || "development",
+  NOT_FIRST_INSTANCE:
+    process.env.NODE_APP_INSTANCE !== undefined &&
+    process.env.NODE_APP_INSTANCE !== "0",
   PROVIDER: (chainId: number) =>
     new ethers.providers.StaticJsonRpcProvider(RPC_URLS[chainId]),
   RPC_URLS,
