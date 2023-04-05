@@ -1071,13 +1071,13 @@ export class MapService {
       );
       if (nextMapPosition.railConstructedOn !== 0) {
         const delay = (nextMapPosition.railConstructedOn - timestamp()) * 1000;
-        console.log(
-          "Adding job to check and move rail (on next rail road construction)",
-          color,
-          gameId,
-          delay / 1000,
-          "s later",
-        );
+        // console.log(
+        //   "Adding job to check and move rail (on next rail road construction)",
+        //   color,
+        //   gameId,
+        //   delay / 1000,
+        //   "s later",
+        // );
         await this.checkAndMoveRailJob.add(
           { color, gameId },
           {
@@ -1379,13 +1379,13 @@ export class MapService {
         newRailPosition.createdAt.valueOf() / 1000 + railMovementLockTime,
       );
       const delay = (unlockTime - timestamp()) * 1000;
-      console.log(
-        "Adding job to check and move rail",
-        color,
-        gameId,
-        delay / 1000,
-        "s later",
-      );
+      // console.log(
+      //   "Adding job to check and move rail",
+      //   color,
+      //   gameId,
+      //   delay / 1000,
+      //   "s later",
+      // );
       await this.checkAndMoveRailJob
         .add(
           { color, gameId },
