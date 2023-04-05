@@ -60,6 +60,14 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
     );
 
     contract.on("Transfer", async (_from, to, tokenId) => {
+      console.log(
+        "Transfer event, updating owners",
+        gameId,
+        address,
+        "owner:",
+        to,
+        tokenId.toNumber(),
+      );
       await this.prisma.nft.update({
         where: {
           tokenId_gameId: { tokenId: tokenId.toNumber(), gameId },
