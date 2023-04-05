@@ -99,17 +99,17 @@ export class GameService {
         throw new BadRequestException("Invalid Chain Id");
       if (!!body.status && !Object.keys(GAME_STATUS).includes(body.status))
         throw new BadRequestException("Invalid Game Status");
-      await this.prisma.game.update({
+      const game = await this.prisma.game.update({
         where: { id },
         data: { ...body, status: body.status as GAME_STATUS },
       });
-      if (body.status === GAME_STATUS.RUNNING)
+      if (game.status === GAME_STATUS.RUNNING)
         this.emit(WS_EVENTS.GAME_STARTED({ gameId: id }));
 
-      if (body.contractAddress && body.chainId) {
+      if (game.contractAddress && game.chainId) {
         this.eventsService.addEventListenerForGame(
-          body.contractAddress,
-          body.chainId,
+          game.contractAddress,
+          game.chainId,
           id,
         );
 
