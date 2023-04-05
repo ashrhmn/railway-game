@@ -9,7 +9,7 @@ export class SocketService {
     console.log("Socket : ", event);
     if (this.socket) this.socket.emit(event, payload);
     else console.warn("Socket not initialized");
-    const SOCKET_SERVER_PORT = process.env.NEXT_PUBLIC_SOCKET_PORT;
+    const SOCKET_SERVER_PORT = process.env.NEXT_PUBLIC_SOCKET_PORT || 4001;
     if (SOCKET_SERVER_PORT) {
       const res = await fetch(
         `http://localhost:${SOCKET_SERVER_PORT}/__socket_emit`,
