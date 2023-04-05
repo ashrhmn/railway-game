@@ -1,17 +1,17 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { ethers } from "ethers";
-import { CONFIG } from "./config/app.config";
-import { NftService } from "./modules/nft/nft.service";
-import { PrismaService } from "./modules/prisma/prisma.service";
+import { CONFIG } from "src/config/app.config";
+import { NftService } from "../nft/nft.service";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
-export class AppService implements OnModuleInit, OnModuleDestroy {
+export class EventsService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly nftService: NftService,
   ) {}
   async onModuleDestroy() {
-    console.log("AppService destroyed");
+    console.log("EventService destroyed");
     const games = await this.prisma.game.findMany({
       where: {
         contractAddress: { not: null },
@@ -33,7 +33,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     if (CONFIG.NODE_ENV.toLowerCase() === "production")
       this.nftService.updateAllNftOwners();
-    console.log("AppService initialized");
+    console.log("EventService initialized");
     const games = await this.prisma.game.findMany({
       where: {
         contractAddress: { not: null },
@@ -43,19 +43,27 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
     games.forEach((game) => {
       if (!game.contractAddress || !game.chainId) return;
-      const contract = new ethers.Contract(
-        game.contractAddress,
-        CONFIG.ABI.SAMPLE721,
-        CONFIG.PROVIDER(game.chainId),
-      );
+      this.addEventListenerForGame(game.contractAddress, game.chainId, game.id);
+    });
+  }
 
-      contract.on("Transfer", async (_from, to, tokenId) => {
-        await this.prisma.nft.update({
-          where: {
-            tokenId_gameId: { tokenId: tokenId.toNumber(), gameId: game.id },
-          },
-          data: { owner: to },
-        });
+  async addEventListenerForGame(
+    address: string,
+    chainId: number,
+    gameId: string,
+  ) {
+    const contract = new ethers.Contract(
+      address,
+      CONFIG.ABI.SAMPLE721,
+      CONFIG.PROVIDER(chainId),
+    );
+
+    contract.on("Transfer", async (_from, to, tokenId) => {
+      await this.prisma.nft.update({
+        where: {
+          tokenId_gameId: { tokenId: tokenId.toNumber(), gameId },
+        },
+        data: { owner: to },
       });
     });
   }

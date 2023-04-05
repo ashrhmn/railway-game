@@ -16,7 +16,7 @@ export class RailMoveJobProcessor {
 
   @Process({ concurrency: 10 })
   async process(job: Job<IRailMoveJobData>) {
-    if (CONFIG.NOT_FIRST_INSTANCE) return;
+    if (CONFIG.NOT_FIRST_INSTANCE) return job.data;
     const { color, gameId } = job.data;
     console.log("checkAndMoveRailJob", color, gameId);
     await this.mapService.checkAndMoveRailByGameIdAndColor(gameId, color);

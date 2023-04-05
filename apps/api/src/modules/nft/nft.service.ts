@@ -11,12 +11,18 @@ import { ethers } from "ethers";
 import { CONFIG } from "src/config/app.config";
 import { Cron } from "@nestjs/schedule";
 import { SocketService } from "../socket/socket.service";
+import { InjectQueue } from "@nestjs/bull";
+import { Queue } from "bull";
+import { QueueJobEnum } from "src/enums/queue-job.enum";
+import { IUpdateNftOwnerJobData } from "src/providers/jobs/update-nft-owner.processor";
 
 @Injectable()
 export class NftService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly socketService: SocketService,
+    @InjectQueue(QueueJobEnum.UPDATE_NFT_OWNER)
+    private readonly updateNftOwnerJob: Queue<IUpdateNftOwnerJobData>,
   ) {}
 
   getNft = createAsyncService<typeof endpoints.nft.getNft>(
@@ -312,11 +318,23 @@ export class NftService {
     });
     if (!game || !game.contractAddress || !game.chainId) return;
     for (const { tokenId } of game.nfts) {
-      await this.updateNftOwner({
-        address: game.contractAddress,
-        tokenId,
-        chainId: game.chainId,
-      });
+      // await this.updateNftOwner({
+      //   address: game.contractAddress,
+      //   tokenId,
+      //   chainId: game.chainId,
+      // });
+      await this.updateNftOwnerJob.add(
+        {
+          address: game.contractAddress,
+          chainId: game.chainId,
+          tokenId,
+        },
+        {
+          removeOnComplete: true,
+          timeout: 30000,
+          backoff: 3,
+        },
+      );
     }
   }
 

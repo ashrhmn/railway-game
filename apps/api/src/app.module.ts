@@ -6,7 +6,6 @@ import {
 } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
-import { AppService } from "./app.service";
 import { RolesGuard } from "./guards/roles.guard";
 import { AuthMiddleware } from "./middlewares/auth.middleware";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -22,6 +21,7 @@ import { CacheManagerModule } from "./providers/cache/cache-manager.module";
 import { MetadataModule } from "./modules/metadata/metadata.module";
 import { BullModule } from "@nestjs/bull";
 import { JobModule } from "./providers/jobs/job.module";
+import { EventsModule } from "./modules/events/events.module";
 
 @Module({
   imports: [
@@ -36,6 +36,7 @@ import { JobModule } from "./providers/jobs/job.module";
     ScheduleModule.forRoot(),
     SocketModule,
     JobModule,
+    EventsModule,
     CacheModule.register({
       store: redisStore.create({
         host: process.env.REDIS_HOST || "localhost",
@@ -52,7 +53,7 @@ import { JobModule } from "./providers/jobs/job.module";
     }),
     CacheManagerModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: RolesGuard }, AppService],
+  providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
