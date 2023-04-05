@@ -7,6 +7,7 @@ import { Position } from "src/classes/Position";
 import { SocketService } from "../socket/socket.service";
 import { CONFIG } from "src/config/app.config";
 import { EventsService } from "../events/events.service";
+import { NftService } from "../nft/nft.service";
 
 @Injectable()
 export class GameService {
@@ -14,6 +15,7 @@ export class GameService {
     private readonly prisma: PrismaService,
     private readonly socketService: SocketService,
     private readonly eventsService: EventsService,
+    private readonly nftService: NftService,
   ) {}
 
   getAll = createAsyncService<typeof endpoints.game.getAll>(
@@ -76,12 +78,14 @@ export class GameService {
         await tx.mapPosition.createMany({ data });
         return game;
       });
-      if (game.contractAddress && game.chainId)
+      if (game.contractAddress && game.chainId) {
         this.eventsService.addEventListenerForGame(
           game.contractAddress,
           game.chainId,
           game.id,
         );
+        this.nftService.updateNftOwnersByGameId(game.id);
+      }
       return "success";
     },
   );
@@ -102,12 +106,15 @@ export class GameService {
       if (body.status === GAME_STATUS.RUNNING)
         this.emit(WS_EVENTS.GAME_STARTED({ gameId: id }));
 
-      if (body.contractAddress && body.chainId)
+      if (body.contractAddress && body.chainId) {
         this.eventsService.addEventListenerForGame(
           body.contractAddress,
           body.chainId,
           id,
         );
+
+        this.nftService.updateNftOwnersByGameId(id);
+      }
 
       return "success";
     },

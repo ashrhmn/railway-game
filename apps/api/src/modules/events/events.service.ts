@@ -52,6 +52,7 @@ export class EventsService implements OnModuleInit, OnModuleDestroy {
     chainId: number,
     gameId: string,
   ) {
+    console.log("add event listener for game", address, chainId);
     const contract = new ethers.Contract(
       address,
       CONFIG.ABI.SAMPLE721,
