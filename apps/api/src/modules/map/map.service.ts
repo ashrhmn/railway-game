@@ -829,6 +829,8 @@ export class MapService {
 
   @Cron(CronExpression.EVERY_30_SECONDS)
   async checkAndMoveRail() {
+    const APP_INSTANCE = process.env.NODE_APP_INSTANCE;
+    if (APP_INSTANCE !== undefined && APP_INSTANCE !== "0") return;
     console.log("\n\ncheckAndMoveRail - cron");
     const runningGames = await this.cacheService.getIfCached(
       `running-games`,

@@ -14,7 +14,7 @@ RUN yarn build
 
 FROM node:16-alpine
 
-RUN yarn global add concurrently env-cmd prisma
+RUN yarn global add concurrently env-cmd prisma pm2
 
 WORKDIR /app
 RUN mkdir -p apps/api apps/client libs/api-interface
@@ -41,5 +41,5 @@ EXPOSE 4000
 
 ENV NODE_ENV=production
 
-CMD ["concurrently", "node apps/api/main.js", "node apps/client/server.js"]
+CMD ["concurrently", "pm2-runtime -i max apps/api/main.js", "node apps/client/server.js"]
 # CMD ["python3", "-m", "http.server", "3000", "-d", "/app/"]
