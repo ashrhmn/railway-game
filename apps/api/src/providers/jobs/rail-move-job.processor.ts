@@ -16,7 +16,14 @@ export class RailMoveJobProcessor {
 
   @Process({ concurrency: 10 })
   async process(job: Job<IRailMoveJobData>) {
-    if (CONFIG.NOT_FIRST_INSTANCE) return job.data;
+    if (CONFIG.NOT_FIRST_INSTANCE) {
+      console.warn(
+        "IGNORE_CAUSED_BY_NOT_FIRST_INSTANCE",
+        "RAIL_MOVE_JOB",
+        job.data,
+      );
+      return job.data;
+    }
     const { color, gameId } = job.data;
     console.log("checkAndMoveRailJob", color, gameId);
     await this.mapService.checkAndMoveRailByGameIdAndColor(gameId, color);

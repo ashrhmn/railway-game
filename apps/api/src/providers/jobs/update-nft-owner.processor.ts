@@ -16,7 +16,14 @@ export class UpdateNftOwnerJobProcessor {
 
   @Process({ concurrency: 30 })
   async process(job: Job<IUpdateNftOwnerJobData>) {
-    if (CONFIG.NOT_FIRST_INSTANCE) return job.data;
+    if (CONFIG.NOT_FIRST_INSTANCE) {
+      console.warn(
+        "IGNORE_CAUSED_BY_NOT_FIRST_INSTANCE",
+        "OWNER_UPDAATE_JOB",
+        job.data,
+      );
+      return job.data;
+    }
     const { address, chainId, tokenId } = job.data;
     console.log("updateNftOwnerJob", chainId, address, tokenId);
     await this.nftService.updateNftOwner({ address, chainId, tokenId });
