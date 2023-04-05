@@ -22,6 +22,7 @@ import { MetadataModule } from "./modules/metadata/metadata.module";
 import { BullModule } from "@nestjs/bull";
 import { JobModule } from "./providers/jobs/job.module";
 import { EventsModule } from "./modules/events/events.module";
+import { CONFIG } from "./config/app.config";
 
 @Module({
   imports: [
@@ -35,7 +36,7 @@ import { EventsModule } from "./modules/events/events.module";
     MetadataModule,
     ScheduleModule.forRoot(),
     SocketModule,
-    JobModule,
+    // JobModule,
     EventsModule,
     CacheModule.register({
       store: redisStore.create({
@@ -52,6 +53,7 @@ import { EventsModule } from "./modules/events/events.module";
       )}`,
     }),
     CacheManagerModule,
+    ...(CONFIG.NOT_FIRST_INSTANCE ? [] : [JobModule]),
   ],
   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
 })

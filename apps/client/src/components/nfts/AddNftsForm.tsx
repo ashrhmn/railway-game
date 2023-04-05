@@ -6,8 +6,6 @@ import SelectColorGame from "../common/SelectColorGame";
 import axios from "axios";
 import { promiseToast } from "@/utils/toast.utils";
 import { handleReqError } from "@/utils/error.utils";
-import service from "@/service";
-import { endpoints } from "api-interface";
 
 type Props = {
   colors: Awaited<ReturnType<typeof getColors>>;
@@ -38,17 +36,16 @@ const AddNftsForm = ({
     const formdata = new FormData(e.currentTarget);
     formdata.append("game_id", selectedGameId || "");
     promiseToast(
-      axios
-        .post("/api/nfts/add-csv", formdata, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        .then(() =>
-          service(endpoints.nft.randomizeFixTokenId)({
-            body: { gameId: selectedGameId },
-          })
-        ),
+      axios.post("/api/nfts/add-csv", formdata, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }),
+      // .then(() =>
+      //   service(endpoints.nft.randomizeFixTokenId)({
+      //     body: { gameId: selectedGameId },
+      //   })
+      // ),
       {
         loading: "Adding NFTs",
         success: "NFTs added",

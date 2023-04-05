@@ -206,8 +206,8 @@ async function main() {
   await seedUser();
   await seedSettings();
   await seedAbilityScoresMapping();
-  await seedGame({ name: "game1", nftCount: 2000 });
-  await seedGame({ name: "game2", nftCount: 1000 });
+  // await seedGame({ name: "game1", nftCount: 2000 });
+  // await seedGame({ name: "game2", nftCount: 1000 });
 }
 main()
   .then(async () => {

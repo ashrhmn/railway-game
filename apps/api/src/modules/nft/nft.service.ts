@@ -180,6 +180,8 @@ export class NftService {
       return "added";
     });
 
+    this.updateNftOwnersByGameId(game_id);
+
     return res;
   }
 
@@ -267,7 +269,7 @@ export class NftService {
     const owner = await contract.ownerOf(tokenId).catch(() => null);
 
     if (!owner) {
-      console.log(`Owner not found for ${address} ${chainId} ${tokenId}`);
+      // console.log(`Owner not found for ${address} ${chainId} ${tokenId}`);
       return;
     }
 
