@@ -7,7 +7,7 @@ import { z } from "zod";
 import { io } from "socket.io-client";
 
 export const socket = io(
-  process.env.NEXT_PUBLIC_API_URL || "https://api.railway.n3xchain.com/"
+  process.env.NEXT_PUBLIC_SOCKET_URL || "https://socket.railway.n3xchain.com/"
 );
 
 export const getAxios =
