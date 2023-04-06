@@ -18,7 +18,15 @@ async function bootstrap() {
   app.enableCors({ origin: true, credentials: true });
   app.setGlobalPrefix("api");
   app.use(cookieParser());
-  app.use(morgan("tiny"));
+  app.use(
+    morgan("tiny", {
+      stream: {
+        write(str) {
+          console.log(str.replace("\n", ""), "PID :", process.pid);
+        },
+      },
+    }),
+  );
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
   app.useWebSocketAdapter(new IoAdapter(app));
