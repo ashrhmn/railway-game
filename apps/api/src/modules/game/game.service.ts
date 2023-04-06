@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { endpoints, WS_EVENTS } from "api-interface";
 import { createAsyncService } from "src/utils/common.utils";
 import { PrismaService } from "../prisma/prisma.service";
-import { COLOR, GAME_STATUS } from "@prisma/client";
+import { COLOR, GAME_STATUS, NFT_JOB } from "@prisma/client";
 import { Position } from "src/classes/Position";
 import { SocketService } from "../socket/socket.service";
 import { CONFIG } from "src/config/app.config";
@@ -72,6 +72,9 @@ export class GameService {
               y,
               isRevealed: true,
               color: color as COLOR,
+              ...(x === 0 && y === 0
+                ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 }
+                : {}),
             })),
           )
           .reduce((acc, val) => acc.concat(val), []);
