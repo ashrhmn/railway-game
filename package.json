@@ -9,10 +9,11 @@
     "libs/*"
   ],
   "scripts": {
-    "dev": "env-cmd --silent concurrently -c 'auto' -n 'api-interface,api,client' 'yarn workspace api-interface dev' 'yarn workspace api dev' 'yarn workspace client dev'",
-    "build": "env-cmd --silent yarn workspace api-interface build && concurrently -c 'auto' -n 'api,client' 'yarn workspace api build' 'yarn workspace client build'",
+    "dev": "env-cmd --silent concurrently -c 'auto' -n 'api-interface,socket,api,client' 'yarn workspace api-interface dev' 'yarn workspace socket dev' 'yarn workspace api dev' 'yarn workspace client dev'",
+    "build": "env-cmd --silent yarn workspace api-interface build && concurrently -c 'auto' -n 'api,socket,client' 'yarn workspace api build' 'yarn workspace socket build' 'yarn workspace client build'",
     "api": "env-cmd --silent yarn workspace api",
     "client": "env-cmd --silent yarn workspace client",
+    "socket": "env-cmd --silent yarn workspace socket",
     "migration:create": "env-cmd --silent yarn workspace api prisma migrate dev",
     "db:reset": "env-cmd --silent yarn workspace api prisma migrate reset --force",
     "db:studio": "env-cmd --silent yarn workspace api prisma studio",

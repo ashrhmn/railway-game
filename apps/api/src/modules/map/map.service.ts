@@ -26,11 +26,13 @@ import { InjectQueue } from "@nestjs/bull";
 import { QueueJobEnum } from "src/enums/queue-job.enum";
 import { Queue } from "bull";
 import { IRailMoveJobData } from "src/providers/jobs/rail-move-job.processor";
+import { GameService } from "../game/game.service";
 
 @Injectable()
 export class MapService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly gameService: GameService,
     private readonly socketService: SocketService,
     private readonly cacheService: CacheService,
     @InjectQueue(QueueJobEnum.CHECK_AND_MOVE_RAIL_BY_GAME_COLOR)
@@ -1084,6 +1086,9 @@ export class MapService {
             delay,
             removeOnComplete: true,
             removeOnFail: true,
+            jobId: `check-and-move-rail-${gameId}:${color}:${Math.round(
+              nextMapPosition.railConstructedOn.valueOf() / 1000,
+            )}`,
           },
         );
       }
@@ -1393,6 +1398,7 @@ export class MapService {
             delay,
             removeOnComplete: true,
             removeOnFail: true,
+            jobId: `check-and-move-rail:${gameId}:${color}:${unlockTime}`,
           },
         )
         .catch(console.error);
@@ -1422,8 +1428,13 @@ export class MapService {
         }),
     );
 
-    if (unpassedCheckPoints > 0) return;
-    await this.prisma.$transaction(async (tx) => {
+    if (unpassedCheckPoints > 0) {
+      console.log(
+        `Attempt winner, but ${unpassedCheckPoints} checkpoints left`,
+      );
+      return;
+    }
+    const res = await this.prisma.$transaction(async (tx) => {
       await tx.game.update({
         where: { id: gameId },
         data: { status: GAME_STATUS.FINISHED },
@@ -1431,20 +1442,8 @@ export class MapService {
       await tx.winnerTeams.create({ data: { gameId, color } });
       await tx.nft.updateMany({
         data: { level: { increment: 1 } },
-        where: { gameId, color: color as COLOR },
+        where: { gameId, color: color, level: { lt: 5 } },
       });
-      await tx.railPosition.createMany({
-        data: Object.values(COLOR).map((color) => ({
-          color,
-          gameId,
-          direction: "LEFT",
-          x: 14,
-          y: 14,
-        })),
-      });
-
-      await tx.mapPosition.deleteMany({ where: { gameId } });
-
       await tx.$executeRaw`
         UPDATE
           nfts AS nft
@@ -1468,14 +1467,15 @@ export class MapService {
           AND nft.game_id = ${gameId}
           AND nft.color::text = ${color};
       `;
+      await this.gameService.resetGameToDefault(tx, gameId);
+      return true;
     });
 
-    this.emit(WS_EVENTS.GAME_FINISHED({ gameId }, { color }));
+    if (res) this.emit(WS_EVENTS.GAME_FINISHED({ gameId }, { color }));
   }
 
-  emit({ event, payload }: { event: string; payload: any }) {
-    console.log("Socket : ", event);
-    this.socketService.socket?.emit(event, payload);
+  emit(data: { event: string; payload?: any }) {
+    this.socketService.emit(data);
   }
 
   // updateRailLocation = createAsyncService<

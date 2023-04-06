@@ -242,7 +242,7 @@ const GameView = () => {
             .map((game) => (
               <button
                 onClick={() => setSelectedGameId(game.id)}
-                className="btn btn-wide btn-lg m-2 flex flex-wrap"
+                className="btn-wide btn-lg btn m-2 flex flex-wrap"
                 key={game.id}
               >
                 {game.name}
@@ -264,7 +264,7 @@ const GameView = () => {
           <div className="mb-2 flex justify-center">
             <button
               onClick={() => setSelectedGameId(null)}
-              className="btn btn-sm"
+              className="btn-sm btn"
             >
               Back
             </button>
@@ -272,7 +272,7 @@ const GameView = () => {
           <h1 className="text-center">Select a Map</h1>
           {colors.map((color) => (
             <div
-              className="btn btn-wide m-2 flex flex-wrap"
+              className="btn-wide btn m-2 flex flex-wrap"
               onClick={() => setSelectedColor(color)}
               key={color}
             >
@@ -309,13 +309,13 @@ const GameView = () => {
                 setSelectedPoint({ x: -1, y: -1 });
                 setSelectedNft(null);
               }}
-              className="btn btn-sm"
+              className="btn-sm btn"
             >
               Reset Selection
             </button>
           )}
           <button
-            className="btn btn-error btn-sm"
+            className="btn-error btn-sm btn"
             onClick={() => {
               setSelectedColor(null);
               setSelectedPoint({ x: -1, y: -1 });
@@ -358,21 +358,25 @@ const GameView = () => {
                 ))}
             </div>
             <div className="my-2 flex h-28 max-w-3xl flex-wrap gap-1 overflow-y-auto">
-              {nfts.data.map((nft) => (
-                <button
-                  onClick={() => {
-                    setSelectedNft(nft);
-                    setSelectedNft(nft);
-                  }}
-                  className={clx(
-                    "btn btn-xs",
-                    selectedNft?.id === nft.id && "btn-accent"
-                  )}
-                  key={nft.id}
-                >
-                  {nft.job}
-                </button>
-              ))}
+              {nfts.data
+                .sort((a, b) =>
+                  a.job.toString().localeCompare(b.job.toString())
+                )
+                .map((nft) => (
+                  <button
+                    onClick={() => {
+                      setSelectedNft(nft);
+                      setSelectedNft(nft);
+                    }}
+                    className={clx(
+                      "btn-xs btn",
+                      selectedNft?.id === nft.id && "btn-accent"
+                    )}
+                    key={nft.id}
+                  >
+                    {nft.job}
+                  </button>
+                ))}
             </div>
           </div>
           <div className="w-2/6">
@@ -494,7 +498,7 @@ const GameView = () => {
               selectedPoint.y !== -1 && (
                 <button
                   onClick={handleAssignNft}
-                  className="btn btn-primary btn-sm"
+                  className="btn-primary btn-sm btn"
                 >
                   Assign {selectedNft.job} on
                   {[selectedPoint, ...additionalLightUpPositions]

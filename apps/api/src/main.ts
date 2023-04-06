@@ -9,6 +9,7 @@ import { BullAdapter } from "@bull-board/api/bullAdapter";
 import { QueueJobEnum } from "./enums/queue-job.enum";
 import { Queue } from "bull";
 import { ExpressAdapter } from "@bull-board/express";
+import * as morgan from "morgan";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +18,15 @@ async function bootstrap() {
   app.enableCors({ origin: true, credentials: true });
   app.setGlobalPrefix("api");
   app.use(cookieParser());
+  app.use(
+    morgan("tiny", {
+      stream: {
+        write(str) {
+          console.log(str.replace("\n", ""), "PID :", process.pid);
+        },
+      },
+    }),
+  );
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
   app.useWebSocketAdapter(new IoAdapter(app));

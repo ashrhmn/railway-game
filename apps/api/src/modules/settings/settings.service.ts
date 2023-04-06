@@ -11,9 +11,8 @@ export class SettingsService {
     private readonly socketService: SocketService,
   ) {}
 
-  emit({ event, payload }: { event: string; payload?: any }) {
-    console.log("Socket : ", event);
-    this.socketService.socket?.emit(event, payload);
+  emit(data: { event: string; payload?: any }) {
+    this.socketService.emit(data);
   }
 
   getAll = createAsyncService<typeof endpoints.settings.getAll>(async () => {

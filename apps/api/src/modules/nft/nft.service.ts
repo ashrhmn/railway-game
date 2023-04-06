@@ -179,8 +179,13 @@ export class NftService {
 
       return "added";
     });
-
-    this.updateNftOwnersByGameId(game_id);
+    (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 4000));
+      this.randomizeFixTokenId(
+        { body: { gameId: game_id }, param: {}, query: {} },
+        {} as any,
+      );
+    })();
 
     return res;
   }
@@ -333,8 +338,8 @@ export class NftService {
         },
         {
           removeOnComplete: true,
-          timeout: 30000,
-          backoff: 3,
+          removeOnFail: true,
+          jobId: `UPDATE_OWNER:${game.chainId}:${game.contractAddress}:${tokenId}`,
         },
       );
     }
@@ -390,8 +395,7 @@ export class NftService {
     return res;
   });
 
-  emit({ event, payload }: { event: string; payload?: any }) {
-    console.log("Socket : ", event);
-    this.socketService.socket?.emit(event, payload);
+  emit(data: { event: string; payload?: any }) {
+    this.socketService.emit(data);
   }
 }
