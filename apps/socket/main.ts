@@ -12,9 +12,9 @@ const server = createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  console.log("Connected :", socket.id);
   socket.on("disconnect", () => {
-    console.log("user disconnected");
+    console.log("Disconnected :", socket.id);
   });
 });
 
