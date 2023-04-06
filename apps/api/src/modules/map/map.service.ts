@@ -1084,6 +1084,9 @@ export class MapService {
             delay,
             removeOnComplete: true,
             removeOnFail: true,
+            jobId: `check-and-move-rail-${gameId}:${color}:${Math.round(
+              nextMapPosition.railConstructedOn.valueOf() / 1000,
+            )}`,
           },
         );
       }
@@ -1393,6 +1396,7 @@ export class MapService {
             delay,
             removeOnComplete: true,
             removeOnFail: true,
+            jobId: `check-and-move-rail:${gameId}:${color}:${unlockTime}`,
           },
         )
         .catch(console.error);
