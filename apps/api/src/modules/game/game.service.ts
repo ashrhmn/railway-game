@@ -37,6 +37,49 @@ export class GameService {
     },
   );
 
+  async resetGameToDefault(
+    tx: Omit<
+      PrismaService,
+      "$connect" | "$disconnect" | "$on" | "$transaction" | "$use"
+    >,
+    gameId: string,
+  ) {
+    await tx.mapPosition.deleteMany({ where: { gameId } });
+    await tx.railPosition.createMany({
+      data: Object.keys(COLOR).map((color) => ({
+        color: color as COLOR,
+        gameId: gameId,
+        direction: "LEFT",
+      })),
+      skipDuplicates: true,
+    });
+    const root = new Position(14, 14);
+    await tx.mapPosition.createMany({
+      data: [
+        root,
+        root.left(),
+        root.left().left(),
+        root.down(),
+        root.down().down(),
+        root.down().left(),
+        root.down().left().left(),
+        root.down().left().down(),
+      ]
+        .map((pos) => pos.getPosition())
+        .map(({ x, y }) =>
+          Object.keys(COLOR).map((color) => ({
+            gameId: gameId,
+            x,
+            y,
+            isRevealed: true,
+            color: color as COLOR,
+            ...(x === 0 && y === 0 ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 } : {}),
+          })),
+        )
+        .reduce((acc, val) => acc.concat(val), []),
+    });
+  }
+
   createGame = createAsyncService<typeof endpoints.game.createGame>(
     async ({ body: { name, contractAddress, chainId } }) => {
       if (chainId !== undefined && !CONFIG.SUPPORTED_CHAINS.includes(chainId))
@@ -45,40 +88,7 @@ export class GameService {
         const game = await tx.game.create({
           data: { name, contractAddress, status: "WAITING", chainId },
         });
-        await tx.railPosition.createMany({
-          data: Object.keys(COLOR).map((color) => ({
-            color: color as COLOR,
-            gameId: game.id,
-            direction: "LEFT",
-          })),
-          skipDuplicates: true,
-        });
-        const root = new Position(14, 14);
-        const data = [
-          root,
-          root.left(),
-          root.left().left(),
-          root.down(),
-          root.down().down(),
-          root.down().left(),
-          root.down().left().left(),
-          root.down().left().down(),
-        ]
-          .map((pos) => pos.getPosition())
-          .map(({ x, y }) =>
-            Object.keys(COLOR).map((color) => ({
-              gameId: game.id,
-              x,
-              y,
-              isRevealed: true,
-              color: color as COLOR,
-              ...(x === 0 && y === 0
-                ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 }
-                : {}),
-            })),
-          )
-          .reduce((acc, val) => acc.concat(val), []);
-        await tx.mapPosition.createMany({ data });
+        this.resetGameToDefault(tx, game.id);
         return game;
       });
       if (game.contractAddress && game.chainId) {
@@ -109,7 +119,7 @@ export class GameService {
       if (game.status === GAME_STATUS.RUNNING)
         this.emit(WS_EVENTS.GAME_STARTED({ gameId: id }));
 
-      if (game.contractAddress && game.chainId) {
+      if (body.contractAddress && game.contractAddress && game.chainId) {
         this.eventsService.addEventListenerForGame(
           game.contractAddress,
           game.chainId,
