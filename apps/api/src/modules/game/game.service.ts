@@ -88,7 +88,7 @@ export class GameService {
         const game = await tx.game.create({
           data: { name, contractAddress, status: "WAITING", chainId },
         });
-        this.resetGameToDefault(tx, game.id);
+        await this.resetGameToDefault(tx, game.id);
         return game;
       });
       if (game.contractAddress && game.chainId) {
