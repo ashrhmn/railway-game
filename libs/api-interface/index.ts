@@ -81,8 +81,19 @@ const NFTResponseSchema = z
     job: z.string(),
     metadata: z.array(z.any()),
   })
-  .passthrough();
-
+  .passthrough()
+  .transform((data) => {
+    return {
+      ...data,
+      image: data.image
+        .replace("{level}", data.level.toString())
+        .replace("{b}", data.abilityB.toString())
+        .replace("{l}", data.abilityL.toString())
+        .replace("{k}", data.abilityK.toString())
+        .replace("{r}", data.abilityR.toString())
+        .replace("{token_id}", data.tokenId.toString()),
+    };
+  });
 const nftMetadataAttributeSchema = z.object({
   trait_type: z.string().nullable().optional(),
   value: z.any(),
@@ -586,7 +597,10 @@ export const endpoints = {
       responseSchema: z.object({
         name: z.string().nullable(),
         description: z.string().nullable(),
-        image: z.string().nullable(),
+        image: z
+          .string()
+          .transform((v) => v)
+          .nullable(),
         attributes: nftMetadataAttributeSchema.array(),
         traits: nftMetadataAttributeSchema.array(),
       }),

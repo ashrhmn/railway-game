@@ -29,6 +29,7 @@ export class MetadataService {
           job: true,
           level: true,
           metadata: true,
+          tokenId: true,
         },
       });
       if (!nft) throw new NotFoundException();
@@ -48,7 +49,13 @@ export class MetadataService {
       return {
         name: nft.name,
         description: nft.description,
-        image: nft.image,
+        image: nft.image
+          .replace("{level}", nft.level.toString())
+          .replace("{b}", nft.abilityB.toString())
+          .replace("{l}", nft.abilityL.toString())
+          .replace("{k}", nft.abilityK.toString())
+          .replace("{r}", nft.abilityR.toString())
+          .replace("{token_id}", nft.tokenId.toString()),
         attributes,
         traits: attributes,
       };
