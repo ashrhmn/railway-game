@@ -230,6 +230,10 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
     };
   }, [color, gameId, refetch, refetchRailPosition]);
 
+  useEffect(() => {
+    setSelectedMapItemVariant("NOT_SELECTED");
+  }, [selectedMapItem]);
+
   if (data.length === 0) return <FullScreenSpinner />;
   if (status === "error") return <ErrorView error={error} />;
   if (!mapItems) return <div>Error getting map items</div>;

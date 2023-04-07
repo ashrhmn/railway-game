@@ -130,6 +130,14 @@ export class MapService {
         throw new BadRequestException(
           `Cannot assign both ${mapItem} and ${prePlaced} at same place`,
         );
+      if (
+        !!mapItemVariant &&
+        !!mapItem &&
+        !mapItemVariant.startsWith(`${mapItem}_`)
+      )
+        throw new BadRequestException(
+          `${mapItemVariant} is not a variant of ${mapItem}`,
+        );
       const payload = !!mapItem
         ? {
             mapItem: MAP_ITEMS[mapItem],
