@@ -10,7 +10,7 @@ export const mapPositions = ({
 }: {
   color: COLOR;
   gameId: string;
-}): Awaited<ReturnType<typeof getter>> =>
+}): Awaited<ReturnType<typeof getter>>["positions"] =>
   Array(15)
     .fill(0)
     .map((_, i) =>

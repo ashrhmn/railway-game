@@ -48,7 +48,7 @@ const GameView = () => {
   });
 
   const {
-    data: mapPositionsData,
+    data: { positions: mapPositionsData },
     status: mapPositionsFetchStatus,
     refetch: refetchMapPositions,
   } = useQuery({
@@ -56,12 +56,12 @@ const GameView = () => {
     queryFn: () =>
       service(endpoints.map.getPositions)({
         query: {
-          color: selectedColor || "",
+          color: selectedColor!,
           gameId: selectedGameId || "",
-          take: 999,
         },
       }),
     enabled: !!selectedGameId && !!selectedColor,
+    initialData: { positions: [], enemies: [] },
   });
 
   const {
@@ -123,7 +123,9 @@ const GameView = () => {
   }, [mapPositionsData, selectedColor, selectedGameId]);
 
   const getBlockView = useCallback(
-    (p: InferOutputs<typeof endpoints.map.getPositions>[number]) => {
+    (
+      p: InferOutputs<typeof endpoints.map.getPositions>["positions"][number]
+    ) => {
       if (!p.isRevealed) return "";
       if (
         !!currentRailPosition &&

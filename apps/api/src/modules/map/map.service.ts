@@ -76,9 +76,9 @@ export class MapService {
   }
 
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
-    async ({ query: { skip, take, color, gameId } }, { user }) => {
-      const data = await this.cacheService.getIfCached(
-        `getPositions:${JSON.stringify({ skip, take, color, gameId, user })}`,
+    async ({ query: { color, gameId } }, { user }) => {
+      const positions = await this.cacheService.getIfCached(
+        `getPositions:${JSON.stringify({ color, gameId, user })}`,
         1,
         () =>
           this.prisma.mapPosition.findMany({
@@ -93,8 +93,6 @@ export class MapService {
               nft: true,
               enemy: { include: { _count: { select: { positions: true } } } },
             },
-            skip,
-            take,
             orderBy: [
               {
                 x: "asc",
@@ -105,7 +103,20 @@ export class MapService {
             ],
           }),
       );
-      return data;
+      const enemies = await this.prisma.enemy.findMany({
+        where: {
+          positions: { some: { gameId, color } },
+          currentStrength: { gt: 0 },
+        },
+        select: {
+          positions: { select: { x: true, y: true } },
+          id: true,
+          name: true,
+          strength: true,
+          currentStrength: true,
+        },
+      });
+      return { positions, enemies };
     },
   );
 

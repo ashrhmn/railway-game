@@ -88,14 +88,20 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
     keepPreviousData: true,
   });
 
-  const { data, status, refetch, error } = useQuery({
+  const {
+    data: { positions: data },
+    status,
+    refetch,
+    error,
+  } = useQuery({
     queryKey: ["map-positions", color, gameId],
     queryFn: () =>
       service(endpoints.map.getPositions)({
-        query: { color, gameId, take: 1000 },
+        query: { color, gameId },
       }),
     retry: 0,
     keepPreviousData: true,
+    initialData: { positions: [], enemies: [] },
   });
   const positions = useMemo(() => {
     const def = mapPositions({ color, gameId });
@@ -224,7 +230,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
     };
   }, [color, gameId, refetch, refetchRailPosition]);
 
-  if (status === "loading") return <FullScreenSpinner />;
+  if (data.length === 0) return <FullScreenSpinner />;
   if (status === "error") return <ErrorView error={error} />;
   if (!mapItems) return <div>Error getting map items</div>;
   if (!nftJobs) return <div>Error getting nft jobs</div>;
@@ -463,7 +469,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 (selectedMapItem === "NOT_SELECTED" &&
                   selectedNftJob === "NOT_SELECTED")
               }
-              className={clx("btn btn-accent btn-sm mt-4")}
+              className={clx("btn-accent btn-sm btn mt-4")}
             >
               Assign
             </button>
@@ -489,7 +495,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 />
                 <p className="text-error">{errors.strength?.message}</p>
               </div>
-              <button type="submit" className="btn btn-sm mt-4">
+              <button type="submit" className="btn-sm btn mt-4">
                 Add Enemy
               </button>
             </form>

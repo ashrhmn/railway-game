@@ -215,40 +215,49 @@ export const endpoints = {
     getPositions: {
       ...defaultConfig,
       pattern: "map/positions",
-      responseSchema: z
-        .object({
-          id: z.string(),
-          x: z.number().min(0).max(14),
-          y: z.number().min(0).max(14),
-          color: z.nativeEnum(COLOR),
-          mapItem: z.string().nullable(),
-          mapItemVariant: z.string().nullable(),
-          prePlaced: z.string().nullable(),
-          gameId: z.string(),
-          isRevealed: z.boolean(),
-          nft: NFTResponseSchema.nullable(),
-          checkPointPassed: z.boolean(),
-          bridgeConstructedOn: z.number(),
-          railConstructedOn: z.number(),
-          enemy: z
-            .object({
-              id: z.string(),
-              name: z.string(),
-              strength: z.number(),
-              currentStrength: z.number(),
-              _count: z.object({ positions: z.number() }),
-            })
-            .transform((data) => (data.currentStrength === 0 ? null : data))
-            .nullable(),
-        })
-        .passthrough()
-        .array(),
-      querySchema: z
-        .object({
-          gameId: z.string(),
-          color: z.string(),
-        })
-        .and(SkipTakeSchema),
+      responseSchema: z.object({
+        positions: z
+          .object({
+            id: z.string(),
+            x: z.number().min(0).max(14),
+            y: z.number().min(0).max(14),
+            color: z.nativeEnum(COLOR),
+            mapItem: z.string().nullable(),
+            mapItemVariant: z.string().nullable(),
+            prePlaced: z.string().nullable(),
+            gameId: z.string(),
+            isRevealed: z.boolean(),
+            nft: NFTResponseSchema.nullable(),
+            checkPointPassed: z.boolean(),
+            bridgeConstructedOn: z.number(),
+            railConstructedOn: z.number(),
+            enemy: z
+              .object({
+                id: z.string(),
+                name: z.string(),
+                strength: z.number(),
+                currentStrength: z.number(),
+                _count: z.object({ positions: z.number() }),
+              })
+              .transform((data) => (data.currentStrength === 0 ? null : data))
+              .nullable(),
+          })
+          .passthrough()
+          .array(),
+        enemies: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+            strength: z.number(),
+            currentStrength: z.number(),
+            positions: z.object({ x: z.number(), y: z.number() }).array(),
+          })
+          .array(),
+      }),
+      querySchema: z.object({
+        gameId: z.string(),
+        color: z.nativeEnum(COLOR),
+      }),
     },
     assignItemToPosition: {
       ...defaultConfig,
