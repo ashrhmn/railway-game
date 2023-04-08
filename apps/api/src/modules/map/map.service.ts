@@ -78,7 +78,11 @@ export class MapService {
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
     async ({ query: { color, gameId } }, { user }) => {
       const positions = await this.cacheService.getIfCached(
-        `getPositions:${JSON.stringify({ color, gameId, user })}`,
+        `getPositions:${JSON.stringify({
+          color,
+          gameId,
+          user,
+        })}`,
         1,
         () =>
           this.prisma.mapPosition.findMany({
@@ -450,7 +454,7 @@ export class MapService {
         async (tx) => {
           const game = await this.cacheService.getIfCached(
             `tx:game:${gameId}`,
-            15,
+            10,
             () =>
               tx.game.findUnique({
                 where: { id: gameId },
@@ -472,7 +476,7 @@ export class MapService {
 
           const nft = await this.cacheService.getIfCached(
             `tx:nft:${nftId}`,
-            15,
+            1,
             () => tx.nft.findUnique({ where: { id: nftId } }),
           );
           if (!nft)
@@ -486,8 +490,10 @@ export class MapService {
             CONFIG.PROVIDER(game.chainId),
           );
 
-          const owner = (await this.cacheService.getIfCached(``, 10, () =>
-            contract.ownerOf(nft.tokenId).catch(() => ""),
+          const owner = (await this.cacheService.getIfCached(
+            `owner:${game.chainId}:${game.contractAddress}:${nft.tokenId}`,
+            10,
+            () => contract.ownerOf(nft.tokenId).catch(() => ""),
           )) as any;
           if (owner.toLowerCase() !== walletAddress.toLowerCase())
             throw new BadRequestException(
