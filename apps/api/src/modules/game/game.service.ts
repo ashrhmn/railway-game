@@ -32,6 +32,13 @@ export class GameService {
               winnerTeams: true,
             },
           },
+          winnerTeams: {
+            select: {
+              color: true,
+              id: true,
+              createdAt: true,
+            },
+          },
         },
       });
     },

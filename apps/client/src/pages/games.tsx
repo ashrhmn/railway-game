@@ -13,6 +13,8 @@ import { useQuery } from "@tanstack/react-query";
 import { serverSideAuth } from "@/service/serverSideAuth";
 import { getAllGames, getAllGameStatus } from "@/service/game.service";
 import GameUpdateForm from "@/components/game/GameUpdateForm";
+import ErrorView from "@/components/common/ErrorView";
+import FullScreenSpinner from "@/components/common/FullScreenSpinner";
 
 type Props = {
   games: Awaited<ReturnType<typeof getAllGames>>;
@@ -25,18 +27,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   // if (!("user" in auth.props)) return auth;
 
   if ("redirect" in auth) return auth;
-  const [games, allStatus] = await Promise.all([
-    getAllGames(context),
-    getAllGameStatus(context),
-  ]);
+  const [allStatus] = await Promise.all([getAllGameStatus(context)]);
 
-  return { props: { ...auth.props, games, allStatus } };
+  return {
+    props: {
+      ...auth.props,
+      allStatus,
+    },
+  };
 };
 
 const createFormSchema = endpoints.game.createGame.bodySchema;
 type CreateFormData = z.infer<typeof createFormSchema>;
 
-const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
+const Games: NextPage<Props> = ({ allStatus }) => {
   const [isAddModalShown, setIsAddModalShown] = useState(false);
   const {
     register,
@@ -45,10 +49,14 @@ const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
   } = useForm<CreateFormData>({
     resolver: zodResolver(createFormSchema),
   });
-  const { data: games, refetch } = useQuery({
+  const {
+    data: games,
+    refetch,
+    error,
+    status,
+  } = useQuery({
     queryKey: ["games"],
     queryFn: () => getAllGames(),
-    initialData: initialGames,
   });
   const [editingItem, setEditingItem] = useState<
     Exclude<Awaited<ReturnType<typeof getAllGames>>, null>[number] | null
@@ -66,7 +74,10 @@ const Games: NextPage<Props> = ({ games: initialGames, allStatus }) => {
       })
       .catch(handleReqError);
   };
-  if (!games) return <div>Error retriving games</div>;
+  if (status === "loading") return <FullScreenSpinner />;
+  if (status === "error") return <ErrorView error={error} />;
+
+  console.log({ games });
 
   return (
     <>
@@ -232,6 +243,52 @@ const GameItemRow = ({
                     Confirm Delete
                   </label>
                 </div>
+              </label>
+            </label>
+          </div>
+          <div>
+            <label
+              htmlFor={`view-winners-game-modal-${game.id}`}
+              className="btn-info btn-sm btn"
+            >
+              Winners
+            </label>
+            <input
+              type="checkbox"
+              id={`view-winners-game-modal-${game.id}`}
+              className="modal-toggle"
+            />
+            <label
+              htmlFor={`view-winners-game-modal-${game.id}`}
+              className="modal cursor-pointer"
+            >
+              <label className="modal-box relative" htmlFor="">
+                <h3 className="text-lg font-bold">
+                  Winners of the game {game.name || game.id}
+                </h3>
+                {game.winnerTeams.length === 0 && (
+                  <p className="py-4">No Winners Yet</p>
+                )}
+                {game.winnerTeams.length > 0 && (
+                  <div className="w-full overflow-x-auto">
+                    <table className="table-zebra table-compact table w-full">
+                      <thead>
+                        <tr>
+                          <th>Winner Team</th>
+                          <th>Game Won On</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {game.winnerTeams.map((winnerTeam) => (
+                          <tr key={winnerTeam.id}>
+                            <td>{winnerTeam.color}</td>
+                            <td>{`${winnerTeam.createdAt.toLocaleDateString()} ${winnerTeam.createdAt.toLocaleTimeString()}`}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </label>
             </label>
           </div>

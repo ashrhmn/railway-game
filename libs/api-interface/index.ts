@@ -367,6 +367,13 @@ export const endpoints = {
             railPositions: z.number(),
             winnerTeams: z.number(),
           }),
+          winnerTeams: z
+            .object({
+              id: z.string(),
+              color: z.nativeEnum(COLOR),
+              createdAt: z.coerce.date(),
+            })
+            .array(),
         })
         .passthrough()
         .array(),
