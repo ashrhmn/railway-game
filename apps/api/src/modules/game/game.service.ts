@@ -80,7 +80,7 @@ export class GameService {
             y,
             isRevealed: true,
             color: color as COLOR,
-            ...(x === 0 && y === 0 ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 } : {}),
+            ...(x === 14 && y === 14 ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 } : {}),
           })),
         )
         .reduce((acc, val) => acc.concat(val), []),
