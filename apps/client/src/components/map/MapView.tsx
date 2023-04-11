@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import { z } from "zod";
 import ErrorView from "../common/ErrorView";
 import FullScreenSpinner from "../common/FullScreenSpinner";
-import { COLOR, ROLE, MAP_ITEMS } from "@prisma/client";
+import { COLOR, ROLE, MAP_ITEMS, ENEMY_VARIANT } from "@prisma/client";
 
 type Props = {
   color: COLOR;
@@ -64,6 +64,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
       y: selectedPoint.y,
       name: "",
       strength: 1,
+      variant: ENEMY_VARIANT.ENEMY_1,
     },
   });
 
@@ -313,6 +314,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   <h1>(Preplaced) NFT</h1>
                   <h1>Enemy</h1>
                   <h1>Player Assigned</h1>
+                  <h1>Place Revelaed</h1>
                 </div>
                 <div>
                   <h1>
@@ -323,10 +325,16 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                   <h1>{selectedPointDetails?.prePlaced || "None"}</h1>
                   <h1>
                     {!!selectedPointDetails?.enemy
-                      ? `${selectedPointDetails.enemy.name} (Strength : ${selectedPointDetails.enemy.currentStrength}/${selectedPointDetails.enemy.strength})`
+                      ? `${
+                          selectedPointDetails.enemy.variant ||
+                          selectedPointDetails.enemy.name
+                        } (Strength : ${
+                          selectedPointDetails.enemy.currentStrength
+                        }/${selectedPointDetails.enemy.strength})`
                       : "None"}
                   </h1>
                   <h1>{selectedPointDetails?.nft?.job || "None"}</h1>
+                  <h1>{selectedPointDetails?.isRevealed ? "Yes" : "No"}</h1>
                 </div>
               </div>
             </div>
@@ -473,7 +481,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 (selectedMapItem === "NOT_SELECTED" &&
                   selectedNftJob === "NOT_SELECTED")
               }
-              className={clx("btn-accent btn-sm btn mt-4")}
+              className={clx("btn btn-accent btn-sm mt-4")}
             >
               Assign
             </button>
@@ -491,6 +499,20 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 <p className="text-error">{errors.name?.message}</p>
               </div>
               <div className="form-control mt-4">
+                <label className="label-text label">Enemy Variant</label>
+                <select
+                  className="select-bordered select select-sm"
+                  {...register("variant")}
+                >
+                  {Object.values(ENEMY_VARIANT).map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-error">{errors.variant?.message}</p>
+              </div>
+              <div className="form-control mt-4">
                 <label className="label-text label">Enemy Strength</label>
                 <input
                   type="number"
@@ -499,7 +521,7 @@ const MapView = ({ color, gameId, mapItems, nftJobs, roles }: Props) => {
                 />
                 <p className="text-error">{errors.strength?.message}</p>
               </div>
-              <button type="submit" className="btn-sm btn mt-4">
+              <button type="submit" className="btn btn-sm mt-4">
                 Add Enemy
               </button>
             </form>

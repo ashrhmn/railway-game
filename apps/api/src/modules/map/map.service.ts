@@ -214,7 +214,7 @@ export class MapService {
 
   assignEnemyToPosition = createAsyncService<
     typeof endpoints.map.assignEnemyToPosition
-  >(async ({ body: { color, gameId, x, y, strength, name } }) => {
+  >(async ({ body: { color, gameId, x, y, strength, name, variant } }) => {
     const mountainCount = await this.cacheService.getIfCached(
       `map-positions-count:${JSON.stringify({
         x,
@@ -245,6 +245,7 @@ export class MapService {
     await this.prisma.enemy.create({
       data: {
         name,
+        variant,
         strength,
         currentStrength: strength,
         positions: {

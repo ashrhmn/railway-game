@@ -6,6 +6,7 @@ import {
   NFT_JOB,
   MAP_ITEM_VARIANT,
   ROLE,
+  ENEMY_VARIANT,
 } from "@prisma/client";
 
 const defaultConfig = {
@@ -248,6 +249,7 @@ export const endpoints = {
                 name: z.string(),
                 strength: z.number(),
                 currentStrength: z.number(),
+                variant: z.nativeEnum(ENEMY_VARIANT),
                 _count: z.object({ positions: z.number() }),
               })
               .transform((data) => (data.currentStrength === 0 ? null : data))
@@ -303,6 +305,7 @@ export const endpoints = {
         gameId: z.string(),
         strength: z.coerce.number().min(1, "Enemy Strength must be at least 1"),
         name: z.string().min(1),
+        variant: z.nativeEnum(ENEMY_VARIANT),
       }),
       responseSchema: z.string(),
     },

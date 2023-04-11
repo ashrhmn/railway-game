@@ -105,6 +105,14 @@ enum MAP_ITEM_VARIANT {
   FIELD_5
 }
 
+enum ENEMY_VARIANT {
+  ENEMY_1
+  ENEMY_2
+  ENEMY_3
+  ENEMY_4
+  ENEMY_5
+}
+
 model MapPosition {
   id                  String            @id @default(cuid())
   x                   Int
@@ -135,6 +143,7 @@ model Enemy {
   name            String
   strength        Int
   currentStrength Int           @map("current_strength")
+  variant         ENEMY_VARIANT
   positions       MapPosition[]
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
