@@ -124,6 +124,7 @@ export class MapService {
               name: true,
               strength: true,
               currentStrength: true,
+              variant: true,
             },
           }),
       );

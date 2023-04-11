@@ -263,6 +263,7 @@ export const endpoints = {
             name: z.string(),
             strength: z.number(),
             currentStrength: z.number(),
+            variant: z.nativeEnum(ENEMY_VARIANT),
             positions: z.object({ x: z.number(), y: z.number() }).array(),
           })
           .array(),
