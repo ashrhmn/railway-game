@@ -48,6 +48,15 @@ export class GameController {
     );
   }
 
+  @InferMethod(endpoints.game.getNftJobRatios)
+  getNftJobRatios(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.game.getNftJobRatios,
+      context,
+      this.gameService.getNftJobRatios,
+    );
+  }
+
   @InferMethod(endpoints.game.getCurrentRailPosition)
   getCurrentRailPosition(@Context() context: IContext) {
     return createAsyncController(

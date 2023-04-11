@@ -27,12 +27,14 @@ import { QueueJobEnum } from "src/enums/queue-job.enum";
 import { Queue } from "bull";
 import { IRailMoveJobData } from "src/providers/jobs/rail-move-job.processor";
 import { GameService } from "../game/game.service";
+import { NftService } from "../nft/nft.service";
 
 @Injectable()
 export class MapService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gameService: GameService,
+    private readonly nftService: NftService,
     private readonly socketService: SocketService,
     private readonly cacheService: CacheService,
     @InjectQueue(QueueJobEnum.CHECK_AND_MOVE_RAIL_BY_GAME_COLOR)
@@ -107,19 +109,24 @@ export class MapService {
             ],
           }),
       );
-      const enemies = await this.prisma.enemy.findMany({
-        where: {
-          positions: { some: { gameId, color } },
-          currentStrength: { gt: 0 },
-        },
-        select: {
-          positions: { select: { x: true, y: true } },
-          id: true,
-          name: true,
-          strength: true,
-          currentStrength: true,
-        },
-      });
+      const enemies = await this.cacheService.getIfCached(
+        `enemies-with-strength:${gameId}:${color}`,
+        1,
+        () =>
+          this.prisma.enemy.findMany({
+            where: {
+              positions: { some: { gameId, color } },
+              currentStrength: { gt: 0 },
+            },
+            select: {
+              positions: { select: { x: true, y: true } },
+              id: true,
+              name: true,
+              strength: true,
+              currentStrength: true,
+            },
+          }),
+      );
       return { positions, enemies };
     },
   );
@@ -1469,6 +1476,7 @@ export class MapService {
         data: { level: { increment: 1 } },
         where: { gameId, color: color, level: { lt: 5 } },
       });
+      await this.nftService._updateNftsByPercentage(gameId, tx);
       await tx.$executeRaw`
         UPDATE
           nfts AS nft

@@ -44,6 +44,12 @@ export class GameService {
     },
   );
 
+  getNftJobRatios = createAsyncService<typeof endpoints.game.getNftJobRatios>(
+    async ({ param: { gameId } }) => {
+      return await this.prisma.nftJobsRatio.findMany({ where: { gameId } });
+    },
+  );
+
   async resetGameToDefault(
     tx: Omit<
       PrismaService,
@@ -80,7 +86,9 @@ export class GameService {
             y,
             isRevealed: true,
             color: color as COLOR,
-            ...(x === 14 && y === 14 ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 } : {}),
+            ...(x === 14 && y === 14
+              ? { prePlaced: NFT_JOB.RAIL_2_4_6_8 }
+              : {}),
           })),
         )
         .reduce((acc, val) => acc.concat(val), []),

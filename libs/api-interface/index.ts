@@ -449,6 +449,17 @@ export const endpoints = {
       paramSchema: z.object({ gameId: z.string(), walletAddress: z.string() }),
       responseSchema: z.nativeEnum(COLOR).array(),
     },
+    getNftJobRatios: {
+      ...defaultConfig,
+      pattern: "games/nft-job-ratios/:gameId",
+      paramSchema: z.object({ gameId: z.string() }),
+      responseSchema: z
+        .object({
+          job: z.nativeEnum(NFT_JOB),
+          percentage: z.number(),
+        })
+        .array(),
+    },
   },
   user: {
     getAllUsers: {

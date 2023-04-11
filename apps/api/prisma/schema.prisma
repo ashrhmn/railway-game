@@ -160,6 +160,7 @@ model Game {
   nfts            Nft[]
   railPositions   RailPosition[]
   winnerTeams     WinnerTeams[]
+  nftJobsRatio    NftJobsRatio[]
 
   @@map("games")
 }
@@ -253,4 +254,17 @@ model AbilityScoreMapping {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("ability_score_mappings")
+}
+
+model NftJobsRatio {
+  id         String   @id @default(cuid())
+  game       Game     @relation(fields: [gameId], references: [id])
+  job        NFT_JOB
+  percentage Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  gameId     String   @map("game_id")
+
+  @@unique([gameId, job])
+  @@map("nft_jobs_ratio")
 }

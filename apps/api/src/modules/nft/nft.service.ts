@@ -345,6 +345,54 @@ export class NftService {
     }
   }
 
+  async _updateNftsByPercentage(
+    gameId: string,
+    tx: Omit<
+      PrismaService,
+      "$connect" | "$disconnect" | "$on" | "$transaction" | "$use"
+    >,
+  ) {
+    const jobRatios = await tx.nftJobsRatio.findMany({
+      where: { gameId, percentage: { gt: 0 } },
+      select: { job: true, percentage: true },
+    });
+    await tx.nft.updateMany({ data: { flag: false }, where: {} });
+    await tx.nft.updateMany({ data: { flag: true }, where: { gameId } });
+    const total = await tx.nft.count({ where: { gameId } });
+    for (const { percentage, job } of jobRatios) {
+      if (!!((percentage * total) % (100 * Object.values(COLOR).length)))
+        throw new BadRequestException(
+          `Total number of nfts per color must be a rounded number, Error on ${job}`,
+        );
+      const limit = (percentage / 100) * total;
+      const unknownIds =
+        await tx.$queryRaw`SELECT id FROM public.nfts WHERE game_id = ${gameId} AND flag = true ORDER BY RANDOM() LIMIT ${limit}`;
+      const ids = z
+        .object({ id: z.string().cuid() })
+        .array()
+        .parse(unknownIds)
+        .map(({ id }) => id);
+
+      if (ids.length === 0) continue;
+
+      for (const [index, color] of Object.values(COLOR).entries()) {
+        await tx.nft.updateMany({
+          where: {
+            id: {
+              in: ids.filter(
+                (_, i) =>
+                  i >= (ids.length / Object.values(COLOR).length) * index &&
+                  i < (ids.length / Object.values(COLOR).length) * (index + 1),
+              ),
+            },
+          },
+          data: { job, color, flag: false },
+        });
+      }
+    }
+    return "Updated";
+  }
+
   updateNftsByPercentage = createAsyncService<
     typeof endpoints.nft.updateNftsByPercentage
   >(async ({ body: { jobs, gameId } }) => {
@@ -352,43 +400,13 @@ export class NftService {
       throw new BadRequestException("Percentages total must be 100");
     const res = await this.prisma.$transaction(
       async (tx) => {
-        await tx.nft.updateMany({ data: { flag: false }, where: {} });
-        await tx.nft.updateMany({ data: { flag: true }, where: { gameId } });
-        const total = await tx.nft.count({ where: { gameId } });
-        for (const { percentage, job } of jobs) {
-          if (!!((percentage * total) % (100 * Object.values(COLOR).length)))
-            throw new BadRequestException(
-              `Total number of nfts per color must be a rounded number, Error on ${job}`,
-            );
-          const limit = (percentage / 100) * total;
-          const unknownIds =
-            await tx.$queryRaw`SELECT id FROM public.nfts WHERE game_id = ${gameId} AND flag = true ORDER BY RANDOM() LIMIT ${limit}`;
-          const ids = z
-            .object({ id: z.string().cuid() })
-            .array()
-            .parse(unknownIds)
-            .map(({ id }) => id);
-
-          if (ids.length === 0) continue;
-
-          for (const [index, color] of Object.values(COLOR).entries()) {
-            await tx.nft.updateMany({
-              where: {
-                id: {
-                  in: ids.filter(
-                    (_, i) =>
-                      i >= (ids.length / Object.values(COLOR).length) * index &&
-                      i <
-                        (ids.length / Object.values(COLOR).length) *
-                          (index + 1),
-                  ),
-                },
-              },
-              data: { job, color, flag: false },
-            });
-          }
-        }
-        return "Updated";
+        await tx.nftJobsRatio.deleteMany({ where: { gameId } });
+        await tx.nftJobsRatio.createMany({
+          data: jobs
+            .filter((j) => j.percentage > 0)
+            .map(({ job, percentage }) => ({ gameId, job, percentage })),
+        });
+        return await this._updateNftsByPercentage(gameId, tx);
       },
       { maxWait: 999999999999999, timeout: 999999999999999 },
     );

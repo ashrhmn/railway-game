@@ -13,9 +13,11 @@ import { endpoints } from "api-interface";
 import axios from "axios";
 import { GetServerSideProps, NextPage } from "next";
 import Image from "next/image";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { NFT_JOB, COLOR } from "@prisma/client";
 import useDebounce from "@/hooks/useDebounce";
+import ErrorView from "@/components/common/ErrorView";
+import FullScreenSpinner from "@/components/common/FullScreenSpinner";
 
 type Props = {
   colors: Awaited<ReturnType<typeof getColors>>;
@@ -25,20 +27,39 @@ type Props = {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const auth = await serverSideAuth(context);
   if ("redirect" in auth) return auth;
-  const [colors, games] = await Promise.all([
-    getColors(context),
-    getGames(context),
-  ]);
-  return { props: { ...auth.props, colors, games } };
+  const [colors] = await Promise.all([getColors(context)]);
+  return { props: { ...auth.props, colors } };
 };
 
-const NftsPage: NextPage<Props> = ({ colors, games }) => {
+const NftsPage: NextPage<Props> = ({ colors }) => {
+  const {
+    data: games,
+    error: gamesFetchError,
+    status: gamesFetchStatus,
+  } = useQuery({
+    queryKey: ["games"],
+    queryFn: () => service(endpoints.game.getAll)({}),
+  });
+
   const [selectedColor, setSelectedColor] = useState<string | undefined>(
     undefined
   );
   const [selectedGameId, setSelectedGameId] = useState(
     !!games && typeof games?.[0]?.id === "string" ? games[0].id : undefined
   );
+
+  const { data: nftJobRatios } = useQuery({
+    queryKey: ["nft-job-ratios", selectedGameId || ""],
+    queryFn: () =>
+      service(endpoints.game.getNftJobRatios)({
+        param: { gameId: selectedGameId! },
+      }),
+    enabled: !!selectedGameId,
+  });
+
+  useEffect(() => {
+    setSelectedGameId(games?.[0]?.id);
+  }, [games]);
 
   const [selectedPage, setSelectedPage] = useState(1);
 
@@ -126,6 +147,27 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
     RAIL_6_8: "0",
   });
 
+  useEffect(() => {
+    if (nftJobRatios) {
+      const newPercentageValuesForJobs: Record<NFT_JOB, string> = {
+        BRIDGE: "0",
+        KNIGHT: "0",
+        LIGHT: "0",
+        RAIL_2_4: "0",
+        RAIL_2_4_6_8: "0",
+        RAIL_2_6: "0",
+        RAIL_2_8: "0",
+        RAIL_4_6: "0",
+        RAIL_4_8: "0",
+        RAIL_6_8: "0",
+      };
+      nftJobRatios.forEach(({ job, percentage }) => {
+        newPercentageValuesForJobs[job] = percentage.toString();
+      });
+      setPercentageValuesForJobs(newPercentageValuesForJobs);
+    }
+  }, [nftJobRatios]);
+
   const totalPercentageOfUpdatingNftJobs = useMemo(
     () =>
       Object.values(percentageValuesForJobs).reduce(
@@ -190,6 +232,10 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
     }
   };
 
+  if (gamesFetchStatus === "error")
+    return <ErrorView error={gamesFetchError} />;
+  if (gamesFetchStatus === "loading") return <FullScreenSpinner />;
+
   return (
     <>
       <AddNftsForm
@@ -215,7 +261,9 @@ const NftsPage: NextPage<Props> = ({ colors, games }) => {
       <div className="flex flex-col lg:flex-row">
         <div className="min-w-[40rem] overflow-x-auto">
           <details>
-            <summary className="text-lg font-bold">Update NFT Jobs</summary>
+            <summary className="cursor-pointer text-lg font-bold">
+              Set NFT Jobs Ratio
+            </summary>
             <div>
               {Object.values(NFT_JOB).map((job) => (
                 <div
