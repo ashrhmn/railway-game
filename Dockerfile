@@ -11,7 +11,7 @@ COPY libs/api-interface/package.json /app/libs/api-interface/
 RUN yarn install --frozen-lockfile
 COPY . .
 RUN yarn api prisma generate
-RUN yarn api prisma migrate dev
+RUN yarn api prisma migrate deploy
 RUN yarn build
 
 FROM node:16-alpine
