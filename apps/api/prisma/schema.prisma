@@ -139,14 +139,14 @@ model MapPosition {
 }
 
 model Enemy {
-  id              String        @id @default(cuid())
+  id              String         @id @default(cuid())
   name            String
   strength        Int
-  currentStrength Int           @map("current_strength")
-  variant         ENEMY_VARIANT
+  currentStrength Int            @map("current_strength")
+  variant         ENEMY_VARIANT?
   positions       MapPosition[]
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   @@map("enemies")
 }

@@ -249,7 +249,7 @@ export const endpoints = {
                 name: z.string(),
                 strength: z.number(),
                 currentStrength: z.number(),
-                variant: z.nativeEnum(ENEMY_VARIANT),
+                variant: z.nativeEnum(ENEMY_VARIANT).nullable(),
                 _count: z.object({ positions: z.number() }),
               })
               .transform((data) => (data.currentStrength === 0 ? null : data))
@@ -263,7 +263,7 @@ export const endpoints = {
             name: z.string(),
             strength: z.number(),
             currentStrength: z.number(),
-            variant: z.nativeEnum(ENEMY_VARIANT),
+            variant: z.nativeEnum(ENEMY_VARIANT).nullable(),
             positions: z.object({ x: z.number(), y: z.number() }).array(),
           })
           .array(),
