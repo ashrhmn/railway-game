@@ -50,7 +50,7 @@ EXPOSE 4001
 
 ENV NODE_ENV=production
 
-CMD ["concurrently", "pm2-runtime -i max apps/api/main.js --name api","node apps/socket/main.js", "node apps/client/server.js"]
+CMD ["concurrently -n 'api,socket,client' -c 'auto'", "pm2-runtime -i max apps/api/main.js --name api","node apps/socket/main.js", "node apps/client/server.js"]
 # CMD ["concurrently", "node apps/api/main.js","node apps/socket/main.js", "node apps/client/server.js"]
 # CMD ["concurrently", "pm2-runtime -i max apps/api/main.js --name api", "node apps/client/server.js"]
 # CMD ["python3", "-m", "http.server", "3000", "-d", "/app/"]
