@@ -31,7 +31,7 @@ const GameUpdateForm = ({
   return (
     <div
       className={clx(
-        "fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs bg-slate-600 transition-all",
+        "fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs transition-all",
         !editingItem && "translate-x-full"
       )}
     >
@@ -87,13 +87,13 @@ const Form = ({
     <form
       onSubmit={handleSubmit(handleUpdateGame)}
       className={clx(
-        "form-control h-full w-full bg-slate-600 p-4 transition-all"
+        "form-control h-full w-full bg-slate-300 p-4 transition-all dark:bg-slate-700"
       )}
     >
       <button
         type="reset"
         onClick={() => setEditingItem(null)}
-        className="btn-xs btn-circle btn"
+        className="btn btn-xs btn-circle"
       >
         <XMarkIcon className="h-4 w-4" />
       </button>

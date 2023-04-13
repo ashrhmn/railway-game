@@ -46,7 +46,7 @@ const EditForm = ({
     <form
       className={clx(
         !initData && "translate-x-full",
-        "fixed right-0 top-0 bottom-0 z-30 w-96 bg-neutral p-2 transition-all"
+        "fixed right-0 top-0 bottom-0 z-30 w-96 bg-slate-300 p-2 transition-all dark:bg-slate-700"
       )}
       onSubmit={handleSubmit(handleUpdate)}
     >

@@ -88,7 +88,7 @@ const Games: NextPage<Props> = ({ allStatus }) => {
       />
       <div className="flex justify-end">
         <button
-          className="btn-primary btn"
+          className="btn btn-primary"
           onClick={() => setIsAddModalShown((v) => !v)}
         >
           Create a Game
@@ -97,14 +97,14 @@ const Games: NextPage<Props> = ({ allStatus }) => {
       <form
         onSubmit={handleSubmit(handleAddGame)}
         className={clx(
-          "form-control fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs bg-slate-600 p-4 transition-all",
+          "form-control fixed top-0 right-0 bottom-0 z-20 w-full max-w-xs bg-slate-300 p-4 transition-all dark:bg-slate-700",
           !isAddModalShown && "translate-x-full"
         )}
       >
         <button
           type="reset"
           onClick={() => setIsAddModalShown((v) => !v)}
-          className="btn-xs btn-circle btn"
+          className="btn btn-xs btn-circle"
         >
           <XMarkIcon className="h-4 w-4" />
         </button>
@@ -199,14 +199,14 @@ const GameItemRow = ({
         <td className="flex items-center gap-1">
           <button
             onClick={() => setEditingItem(game)}
-            className="btn-accent btn-sm btn"
+            className="btn btn-accent btn-sm"
           >
             Edit
           </button>
           <div>
             <label
               htmlFor={`delete-game-modal-${game.id}`}
-              className="btn-error btn-sm btn"
+              className="btn btn-error btn-sm"
             >
               Delete
             </label>
@@ -237,7 +237,7 @@ const GameItemRow = ({
                 <div className="modal-action">
                   <label
                     htmlFor={`delete-game-modal-${game.id}`}
-                    className="btn-error btn"
+                    className="btn btn-error"
                     onClick={handleDelete}
                   >
                     Confirm Delete
@@ -249,7 +249,7 @@ const GameItemRow = ({
           <div>
             <label
               htmlFor={`view-winners-game-modal-${game.id}`}
-              className="btn-info btn-sm btn"
+              className="btn btn-info btn-sm"
             >
               Winners
             </label>

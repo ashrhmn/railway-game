@@ -244,7 +244,7 @@ const GameView = () => {
             .map((game) => (
               <button
                 onClick={() => setSelectedGameId(game.id)}
-                className="btn-wide btn-lg btn m-2 flex flex-wrap"
+                className="btn btn-wide btn-lg m-2 flex flex-wrap"
                 key={game.id}
               >
                 {game.name}
@@ -266,7 +266,7 @@ const GameView = () => {
           <div className="mb-2 flex justify-center">
             <button
               onClick={() => setSelectedGameId(null)}
-              className="btn-sm btn"
+              className="btn btn-sm"
             >
               Back
             </button>
@@ -274,7 +274,7 @@ const GameView = () => {
           <h1 className="text-center">Select a Map</h1>
           {colors.map((color) => (
             <div
-              className="btn-wide btn m-2 flex flex-wrap"
+              className="btn btn-wide m-2 flex flex-wrap"
               onClick={() => setSelectedColor(color)}
               key={color}
             >
@@ -311,13 +311,13 @@ const GameView = () => {
                 setSelectedPoint({ x: -1, y: -1 });
                 setSelectedNft(null);
               }}
-              className="btn-sm btn"
+              className="btn btn-sm"
             >
               Reset Selection
             </button>
           )}
           <button
-            className="btn-error btn-sm btn"
+            className="btn btn-error btn-sm"
             onClick={() => {
               setSelectedColor(null);
               setSelectedPoint({ x: -1, y: -1 });
@@ -328,7 +328,7 @@ const GameView = () => {
         </div>
         <div className="flex w-full items-center gap-4">
           <div>
-            <div className="select-none">
+            <div className="select-none border-2 border-primary">
               {Array(15)
                 .fill(0)
                 .map((_, i) => (
@@ -371,7 +371,7 @@ const GameView = () => {
                       setSelectedNft(nft);
                     }}
                     className={clx(
-                      "btn-xs btn",
+                      "btn btn-xs",
                       selectedNft?.id === nft.id && "btn-accent"
                     )}
                     key={nft.id}
@@ -500,7 +500,7 @@ const GameView = () => {
               selectedPoint.y !== -1 && (
                 <button
                   onClick={handleAssignNft}
-                  className="btn-primary btn-sm btn"
+                  className="btn btn-primary btn-sm"
                 >
                   Assign {selectedNft.job} on
                   {[selectedPoint, ...additionalLightUpPositions]

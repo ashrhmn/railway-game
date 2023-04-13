@@ -259,7 +259,7 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
         colorAllOption
       />
       <div className="flex flex-col lg:flex-row">
-        <div className="min-w-[40rem] overflow-x-auto">
+        <div className="min-w-[30rem] overflow-x-auto">
           <details>
             <summary className="cursor-pointer text-lg font-bold">
               Set NFT Jobs Ratio
@@ -329,7 +329,7 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
                 <button
                   disabled={totalPercentageOfUpdatingNftJobs !== 100}
                   onClick={handleUpdateNftJobs}
-                  className="btn btn-accent btn-sm"
+                  className="btn-accent btn-sm btn"
                 >
                   Update
                 </button>
@@ -341,18 +341,18 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
           <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
             <button
               onClick={() => setShowAddForm((v) => !v)}
-              className="btn-outline btn btn-accent btn-sm"
+              className="btn-outline btn-accent btn-sm btn"
             >
               Add
             </button>
 
-            <label htmlFor="delete-modal" className="btn btn-error btn-sm">
+            <label htmlFor="delete-modal" className="btn-error btn-sm btn">
               Delete
             </label>
-            <label htmlFor="randomize-tokenids-modal" className="btn btn-sm">
+            <label htmlFor="randomize-tokenids-modal" className="btn-sm btn">
               Randomize Token ID
             </label>
-            <button onClick={handleRefreshOwners} className="btn btn-sm">
+            <button onClick={handleRefreshOwners} className="btn-sm btn">
               Refresh Owners
             </button>
             <input type="checkbox" id="delete-modal" className="modal-toggle" />
@@ -368,7 +368,7 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
                   <label
                     onClick={handleDeleteNfts}
                     htmlFor="delete-modal"
-                    className="btn btn-warning"
+                    className="btn-warning btn"
                   >
                     Confirm Delete
                   </label>
@@ -401,7 +401,7 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
                   <label
                     onClick={handleRandomizeTokenId}
                     htmlFor="randomize-tokenids-modal"
-                    className="btn btn-warning"
+                    className="btn-warning btn"
                   >
                     Confirm Randomize Token IDs
                   </label>
@@ -499,7 +499,7 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
                 </td>
                 <td>{nft.frozenTill > timestamp() ? "Yes" : "No"}</td>
                 <td>
-                  <pre className="max-h-60 overflow-y-auto bg-neutral p-1">
+                  <pre className="max-h-60 w-max overflow-y-auto bg-slate-300 p-1 dark:bg-slate-700">
                     {JSON.stringify(nft.metadata, null, 2)}
                   </pre>
                 </td>

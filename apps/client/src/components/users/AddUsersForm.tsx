@@ -54,14 +54,14 @@ const AddUsersForm = ({ setShow, show, roles, refetch }: Props) => {
     <form
       className={clx(
         !show && "translate-x-full",
-        "fixed top-0 right-0 bottom-0 z-20 w-80 bg-neutral p-2 transition-all"
+        "fixed top-0 right-0 bottom-0 z-20 w-80 bg-slate-300 p-2 transition-all dark:bg-slate-700"
       )}
       onSubmit={handleSubmit(handleCreateUser)}
     >
       <button
         type="reset"
         onClick={() => setShow((v) => !v)}
-        className="btn-xs btn-circle btn"
+        className="btn btn-xs btn-circle"
       >
         <XMarkIcon className="h-4 w-4" />
       </button>
@@ -133,7 +133,7 @@ const AddUsersForm = ({ setShow, show, roles, refetch }: Props) => {
           </div>
         ))}
       </div>
-      <button type="submit" className="btn-primary btn mt-4 w-full">
+      <button type="submit" className="btn btn-primary mt-4 w-full">
         Create User
       </button>
     </form>
