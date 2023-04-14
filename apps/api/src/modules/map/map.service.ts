@@ -812,18 +812,26 @@ export class MapService {
                 { x, y, job: nft.job, railConstructedOn },
               ]);
             }
+
+            const key =
+              nft.job === "BRIDGE"
+                ? SETTINGS_KEY.BRIDGE_NFT_LOCKING_TIME
+                : nft.job === "KNIGHT"
+                ? SETTINGS_KEY.KNIGHT_NFT_LOCKING_TIME
+                : SETTINGS_KEY.RAIL_NFT_LOCKING_TIME;
+
             const nftFrozenTime = await this.cacheService.getIfCached(
-              `Settings:NFT_LOCK_TIME`,
+              key,
               30,
               () =>
                 tx.settings.findUnique({
-                  where: { key: SETTINGS_KEY.NFT_LOCK_TIME },
+                  where: { key },
                   select: { numValue: true },
                 }),
             );
 
             if (!nftFrozenTime || !nftFrozenTime.numValue)
-              throw new BadRequestException(`NFT Frozen Time not set`);
+              throw new BadRequestException(`${key} not set`);
 
             const frozenTill = timestamp() + nftFrozenTime.numValue;
 

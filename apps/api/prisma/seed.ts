@@ -6,7 +6,9 @@ import { hash } from "argon2";
 export enum SETTINGS_KEY {
   BRIDGE_CONSTRUCTION_TIME = "BRIDGE_CONSTRUCTION_TIME",
   RAIL_ROAD_CONSTRUCTION_TIME = "RAIL_ROAD_CONSTRUCTION_TIME",
-  NFT_LOCK_TIME = "NFT_LOCK_TIME",
+  BRIDGE_NFT_LOCKING_TIME = "BRIDGE_NFT_LOCKING_TIME",
+  KNIGHT_NFT_LOCKING_TIME = "KNIGHT_NFT_LOCKING_TIME",
+  RAIL_NFT_LOCKING_TIME = "RAIL_NFT_LOCKING_TIME",
   RAIL_MOVEMENT_LOCK_TIME = "RAIL_MOVEMENT_LOCK_TIME",
   LIGHT_NFT_LOCKING_TIME = "LIGHT_NFT_LOCKING_TIME",
 }
@@ -75,6 +77,7 @@ async function seedNft(gameId: string, nftCount = 2000) {
 }
 
 async function seedSettings() {
+  await prisma.settings.deleteMany();
   await prisma.settings.createMany({
     data: [
       {
@@ -85,11 +88,25 @@ async function seedSettings() {
         description: "Time in seconds to construct a bridge",
       },
       {
-        key: SETTINGS_KEY.NFT_LOCK_TIME,
+        key: SETTINGS_KEY.BRIDGE_NFT_LOCKING_TIME,
         valueType: "NUMBER",
         numValue: 60, // 1 minutes
-        title: "NFT Locking Time",
-        description: "Time in seconds to lock an NFT for after use",
+        title: "Bridge NFT Locking Time",
+        description: "Time in seconds to lock a Bridge NFT for after use",
+      },
+      {
+        key: SETTINGS_KEY.KNIGHT_NFT_LOCKING_TIME,
+        valueType: "NUMBER",
+        numValue: 60, // 1 minutes
+        title: "Knight NFT Locking Time",
+        description: "Time in seconds to lock a Knight NFT for after use",
+      },
+      {
+        key: SETTINGS_KEY.RAIL_NFT_LOCKING_TIME,
+        valueType: "NUMBER",
+        numValue: 60, // 1 minutes
+        title: "Rail NFT Locking Time",
+        description: "Time in seconds to lock a Rail NFT for after use",
       },
       {
         key: SETTINGS_KEY.RAIL_ROAD_CONSTRUCTION_TIME,
@@ -118,6 +135,7 @@ async function seedSettings() {
 }
 
 async function seedAbilityScoresMapping() {
+  await prisma.abilityScoreMapping.deleteMany();
   await prisma.abilityScoreMapping.createMany({
     data: [
       {
