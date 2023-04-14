@@ -312,7 +312,7 @@ const NftsPage: NextPage<Props> = ({ colors }) => {
                             Object.values(COLOR).length || 0
                         ).toFixed(4)
                       }{" "}
-                      per color )
+                      per color)
                     </span>
                   </div>
                   {!!updateNftJobErrorText(job) && (

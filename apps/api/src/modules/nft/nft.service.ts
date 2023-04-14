@@ -356,6 +356,10 @@ export class NftService {
       where: { gameId, percentage: { gt: 0 } },
       select: { job: true, percentage: true },
     });
+    if (jobRatios.reduce((prev, curr) => prev + curr.percentage, 0) !== 100) {
+      console.warn("Invalid Job Ratios, must add up to 100");
+      return "Invalid Job Ratios, must add up to 100";
+    }
     await tx.nft.updateMany({ data: { flag: false }, where: {} });
     await tx.nft.updateMany({ data: { flag: true }, where: { gameId } });
     const total = await tx.nft.count({ where: { gameId } });
