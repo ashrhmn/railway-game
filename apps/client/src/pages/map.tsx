@@ -54,11 +54,11 @@ const Map: NextPage<Props> = ({
   const [selectedColor, setSelectedColor] = useState(
     !!colors && typeof colors?.[0] === "string" ? colors[0] : undefined
   );
-  const [selectedGameId, setSelectedGameId] = useState(
-    !!games && typeof games?.[0]?.id === "string" ? games[0].id : undefined
+  const [selectedGameId, setSelectedGameId] = useState<string | undefined>(
+    undefined
   );
   useEffect(() => {
-    setSelectedGameId(games?.[0]?.id);
+    setSelectedGameId((v) => v || games?.[0]?.id);
   }, [games]);
   if (status === "error") return <ErrorView error={error} />;
   if (status === "loading") return <FullScreenSpinner />;
