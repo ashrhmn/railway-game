@@ -127,7 +127,7 @@ export class MapService {
               currentStrength: { gt: 0 },
             },
             select: {
-              positions: { select: { x: true, y: true, isRevealed: true } },
+              positions: { select: { x: true, y: true } },
               id: true,
               name: true,
               strength: true,
