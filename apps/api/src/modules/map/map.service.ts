@@ -115,11 +115,19 @@ export class MapService {
         () =>
           this.prisma.enemy.findMany({
             where: {
-              positions: { some: { gameId, color } },
+              positions: {
+                some: {
+                  gameId,
+                  color,
+                  ...(!!user && user.roles.includes("ADMIN")
+                    ? {}
+                    : { isRevealed: true }),
+                },
+              },
               currentStrength: { gt: 0 },
             },
             select: {
-              positions: { select: { x: true, y: true } },
+              positions: { select: { x: true, y: true, isRevealed: true } },
               id: true,
               name: true,
               strength: true,

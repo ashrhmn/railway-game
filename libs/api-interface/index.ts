@@ -252,6 +252,7 @@ export const endpoints = {
                 variant: z.nativeEnum(ENEMY_VARIANT).nullable(),
                 _count: z.object({ positions: z.number() }),
               })
+              .passthrough()
               .transform((data) => (data.currentStrength === 0 ? null : data))
               .nullable(),
           })
@@ -264,8 +265,12 @@ export const endpoints = {
             strength: z.number(),
             currentStrength: z.number(),
             variant: z.nativeEnum(ENEMY_VARIANT).nullable(),
-            positions: z.object({ x: z.number(), y: z.number() }).array(),
+            positions: z
+              .object({ x: z.number(), y: z.number() })
+              .passthrough()
+              .array(),
           })
+          .passthrough()
           .array(),
       }),
       querySchema: z.object({
