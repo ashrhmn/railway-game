@@ -358,6 +358,15 @@ export const endpoints = {
       }),
       responseSchema: z.string(),
     },
+    getNextPosibleMovementTime: {
+      ...defaultConfig,
+      pattern: "games/next-posible-movement-time/:gameId/:color",
+      responseSchema: z.number(),
+      paramSchema: z.object({
+        gameId: z.string(),
+        color: z.nativeEnum(COLOR),
+      }),
+    },
   },
   game: {
     getAll: {

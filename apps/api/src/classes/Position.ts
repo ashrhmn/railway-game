@@ -25,4 +25,8 @@ export class Position {
   down() {
     return new Position(this.x, this.y - 1);
   }
+
+  isValid() {
+    return this.x >= 0 && this.x <= 14 && this.y >= 0 && this.y <= 14;
+  }
 }

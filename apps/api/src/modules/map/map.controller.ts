@@ -48,13 +48,21 @@ export class MapController {
     );
   }
 
-  // @Roles("ADMIN", "GAMEDEV")
   @InferMethod(endpoints.map.getPositions)
   getPositions(@Context() context: IContext) {
     return createAsyncController(
       endpoints.map.getPositions,
       context,
       this.mapService.getPositions,
+    );
+  }
+
+  @InferMethod(endpoints.map.getNextPosibleMovementTime)
+  getNextPosibleMovementTime(@Context() context: IContext) {
+    return createAsyncController(
+      endpoints.map.getNextPosibleMovementTime,
+      context,
+      this.mapService.getNextPosibleMovementTime,
     );
   }
 

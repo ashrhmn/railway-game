@@ -77,6 +77,82 @@ export class MapService {
     return railMovementLockTime.numValue;
   }
 
+  getNextPosibleMovementTime = createAsyncService<
+    typeof endpoints.map.getNextPosibleMovementTime
+  >(async ({ param: { color, gameId } }) => {
+    const position = await this.prisma.railPosition.findFirst({
+      where: { color: color as COLOR, gameId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!position) throw new BadRequestException("Rail not placed yet");
+
+    const currentPosition = new Position(position.x, position.y);
+
+    const nextPosition = {
+      LEFT: currentPosition.left(),
+      RIGHT: currentPosition.right(),
+      UP: currentPosition.up(),
+      DOWN: currentPosition.down(),
+    }[position.direction];
+
+    const directionNumMap = {
+      LEFT: "6",
+      RIGHT: "4",
+      UP: "2",
+      DOWN: "8",
+    };
+
+    const railMovementLockTime = await this.getRailMovementLockTime();
+
+    const now = timestamp();
+
+    const nextRailMovementTime =
+      Math.round(position.createdAt.valueOf() / 1000) + railMovementLockTime;
+
+    if (!nextPosition.isValid()) return nextRailMovementTime;
+
+    const nextMapPosition = await this.prisma.mapPosition.findFirst({
+      where: {
+        gameId,
+        x: nextPosition.x,
+        y: nextPosition.y,
+        color,
+      },
+      include: { nft: true, enemy: true },
+    });
+
+    if (!nextMapPosition || !nextMapPosition.isRevealed)
+      throw new BadRequestException("Next position is not revealed yet");
+
+    if (nextMapPosition.mapItem === "MOUNTAIN") return nextRailMovementTime;
+
+    if (
+      nextMapPosition.mapItem === "RIVER" &&
+      (nextMapPosition.bridgeConstructedOn === 0 ||
+        nextMapPosition.bridgeConstructedOn > now)
+    )
+      return nextRailMovementTime;
+
+    if (!!nextMapPosition.enemy && nextMapPosition.enemy.currentStrength > 0)
+      return nextRailMovementTime;
+
+    if (!nextMapPosition.nft) {
+      if (
+        !!nextMapPosition.prePlaced &&
+        nextMapPosition.prePlaced.includes(directionNumMap[position.direction])
+      )
+        return nextRailMovementTime;
+
+      throw new BadRequestException("No NFT placed on next position");
+    }
+
+    if (nextMapPosition.nft.job.includes(directionNumMap[position.direction]))
+      return Math.max(nextMapPosition.nft.frozenTill, nextRailMovementTime);
+
+    throw new BadRequestException("NFT Job Mismatch for next position");
+  });
+
   getPositions = createAsyncService<typeof endpoints.map.getPositions>(
     async ({ query: { color, gameId } }, { user }) => {
       const positions = await this.cacheService.getIfCached(
