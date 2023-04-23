@@ -358,9 +358,9 @@ export const endpoints = {
       }),
       responseSchema: z.string(),
     },
-    getNextPosibleMovementTime: {
+    getNextPossibleMovementTime: {
       ...defaultConfig,
-      pattern: "games/next-posible-movement-time/:gameId/:color",
+      pattern: "map/next-possible-movement-time/:gameId/:color",
       responseSchema: z.number(),
       paramSchema: z.object({
         gameId: z.string(),

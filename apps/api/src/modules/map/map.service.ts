@@ -77,8 +77,8 @@ export class MapService {
     return railMovementLockTime.numValue;
   }
 
-  getNextPosibleMovementTime = createAsyncService<
-    typeof endpoints.map.getNextPosibleMovementTime
+  getNextPossibleMovementTime = createAsyncService<
+    typeof endpoints.map.getNextPossibleMovementTime
   >(async ({ param: { color, gameId } }) => {
     const position = await this.prisma.railPosition.findFirst({
       where: { color: color as COLOR, gameId },

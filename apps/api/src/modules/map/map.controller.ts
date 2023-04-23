@@ -57,12 +57,12 @@ export class MapController {
     );
   }
 
-  @InferMethod(endpoints.map.getNextPosibleMovementTime)
-  getNextPosibleMovementTime(@Context() context: IContext) {
+  @InferMethod(endpoints.map.getNextPossibleMovementTime)
+  getNextPossibleMovementTime(@Context() context: IContext) {
     return createAsyncController(
-      endpoints.map.getNextPosibleMovementTime,
+      endpoints.map.getNextPossibleMovementTime,
       context,
-      this.mapService.getNextPosibleMovementTime,
+      this.mapService.getNextPossibleMovementTime,
     );
   }
 
