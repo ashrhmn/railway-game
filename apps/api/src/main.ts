@@ -22,7 +22,7 @@ async function bootstrap() {
     morgan("tiny", {
       stream: {
         write(str) {
-          console.log(str.replace("\n", ""), "PID :", process.pid);
+          console.log(str.replace("\n", ""), "PID :", process.pid, "AppInstance :", process.env.NODE_APP_INSTANCE);
         },
       },
     }),
