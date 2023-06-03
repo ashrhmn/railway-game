@@ -25,7 +25,7 @@ export class UpdateNftOwnerJobProcessor {
       return job.data;
     }
     const { address, chainId, tokenId } = job.data;
-    console.log("updateNftOwnerJob", chainId, address, tokenId);
+    // console.log("updateNftOwnerJob", chainId, address, tokenId);
     await this.nftService.updateNftOwner({ address, chainId, tokenId });
     return job.data;
   }
