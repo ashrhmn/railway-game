@@ -289,7 +289,7 @@ export class NftService {
         where: { id: nft.id },
         data: { owner },
       })
-      .then(() => console.log(`Updated ${address} ${chainId} ${tokenId}`))
+      // .then(() => console.log(`Updated ${address} ${chainId} ${tokenId}`))
       .catch((error) =>
         console.error(
           `Error updating ${address} ${chainId} ${tokenId} ${{ error }}`,
